@@ -3,10 +3,10 @@ import mongoose, { Schema, Document } from 'mongoose';
 export interface UserInterface extends Document {
     name: string
     businessName: string
-    rut: number
-    businessRut: number
+    rut: string
+    businessRut: string
     email: string
-    phone: number
+    phone: string
     address: string
     password: string
     confirmed: boolean
@@ -25,13 +25,13 @@ const userSchema : Schema = new Schema({
         trim: true
     },
     rut: {
-        type: Number,
+        type: String,
         required: true,
         trim: true,
         unique: true
     },
     businessRut: {
-        type: Number,
+        type: String,
         required: true, 
         trim: true
     },
@@ -43,7 +43,7 @@ const userSchema : Schema = new Schema({
         unique: true
     },
     phone: {
-        type: Number,
+        type: String,
         required: true,
         trim: true
     },
@@ -64,7 +64,7 @@ const userSchema : Schema = new Schema({
         type: Boolean,
         default: false
     }
-})
+}, {timestamps: true})
 
 const User = mongoose.model<UserInterface>('User', userSchema)
 

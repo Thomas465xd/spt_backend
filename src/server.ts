@@ -13,6 +13,9 @@ const app = express()
 // Logs
 app.use(morgan("dev"));
 
+// Leer datos de formularios
+app.use(express.json())
+
 // Routes
 app.use("/api/auth", authRouter);
 
