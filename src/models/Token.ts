@@ -3,6 +3,7 @@ import mongoose, { Schema, Document, Types } from 'mongoose';
 interface TokenInterface extends Document {
     userId: Types.ObjectId
     token: string
+    type: string
     createdAt: Date
 }
 
@@ -14,6 +15,12 @@ const tokenSchema : Schema = new Schema({
     },
     token: {
         type: String, 
+        required: true
+    },
+    type: {
+        type: String, 
+        enum: ["admin_confirmation", "password_reset"],
+        default: "admin_confirmation",
         required: true
     },
     createdAt: {

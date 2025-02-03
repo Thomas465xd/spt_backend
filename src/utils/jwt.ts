@@ -17,7 +17,16 @@ export const generateJWT = (payload: UserPayLoad) => {
 // Token for Account Confirmation
 export const generateConfirmationToken = (payload: UserPayLoad) => {
     const token = jwt.sign(payload, process.env.CONFIRMATION_SECRET!, { 
-        expiresIn: "24h"  // Token expires in 24 hours
+        expiresIn: "7d"  // Token expires in 24 hours
+    });
+    return token;
+}
+
+
+// Token for Password reset
+export const generatePasswordResetToken = (payload: UserPayLoad) => {
+    const token = jwt.sign(payload, process.env.PASSWORD_RESET_SECRET!, { 
+        expiresIn: "7d"  // Token expires in 24 hours
     });
     return token;
 }

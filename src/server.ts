@@ -1,14 +1,19 @@
 import express from 'express';
 import dotenv from "dotenv";
+import cors from 'cors';
 import { connectDB } from './config/db';
 import authRouter from './routes/authRouter';
 import morgan from 'morgan';
+import { corsConfig } from './config/cors';
 
 dotenv.config();
 
 connectDB()
 
 const app = express()
+
+// Activar CORS
+app.use(cors(corsConfig));
 
 // Logs
 app.use(morgan("dev"));

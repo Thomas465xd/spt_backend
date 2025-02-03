@@ -5,7 +5,7 @@ import { handleInputErrors } from "../middleware/validation";
 
 const router = Router();
 
-// Auth Routes
+// Client Auth Routes
 
 /* Create Account */
 router.post("/create-account", 
@@ -23,20 +23,49 @@ router.post("/create-account",
         .withMessage("Formato de RUT de la empresa inválido. Ejemplo: 12.345.678-9"),
     body("phone")
         .matches(/^(\+56\s?9\d{8}|9\d{8})$/)
+        .trim()
         .withMessage("Formato de teléfono inválido. Example: +56912345678 or 912345678"),
     body("email")
         .notEmpty().withMessage("El Email es obligatorio")
-        .isEmail().withMessage("El Email no es válido"),
+        .isEmail().withMessage("El Email no es válido")
+        .normalizeEmail(),
     body("address")
         .notEmpty().withMessage("La Dirección es obligatoria"),
     handleInputErrors,
     AuthController.createAccount
 )
 
-/* Confirm Account */
-router.post("/confirm-account",
-    body("token")
-        .notEmpty().withMessage("El Token de Ingreso es Obligatorio")
+/** Set user password */
+router.post("/set-password/:token",
+    param("token")
+        .notEmpty().withMessage("El Token de Ingreso es Obligatorio"),
+    body("password")
+        .isLength({ min: 8 }).withMessage("La contraseña debe tener al menos 8 caracteres")
+        .trim()
+        .escape(), 
+    body("confirmPassword")
+        .trim()
+        .custom((value, { req }) => {
+            if(value !== req.body.password) {
+                throw new Error("Las contraseñas no coinciden");
+            }
+            return true
+        }),
+    handleInputErrors,
+    AuthController.createPassword
 )
+
+// Admin Auth Routes
+
+/* Confirm Account */
+router.post("/admin/confirm/:token",
+    param("token")
+        .notEmpty().withMessage("El Token de Ingreso es Obligatorio"),
+    handleInputErrors,
+    AuthController.confirmUser
+)
+
+/* Delete User */
+
 
 export default router

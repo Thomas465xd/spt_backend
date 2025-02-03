@@ -10,6 +10,7 @@ export interface UserInterface extends Document {
     address: string
     password: string
     confirmed: boolean
+    passwordSet: boolean
     admin: boolean
 }
 
@@ -60,6 +61,10 @@ const userSchema : Schema = new Schema({
         type: Boolean, 
         default: false
     }, 
+    passwordSet: {
+        type: Boolean,
+        default: false
+    },
     admin: {
         type: Boolean,
         default: false
