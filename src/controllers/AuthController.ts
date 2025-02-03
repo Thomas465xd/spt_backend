@@ -1,10 +1,10 @@
 import type { Request, Response } from "express";
 import User from "../models/User";
 import Token from "../models/Token";
-import { generateConfirmationToken, generatePasswordResetToken } from "../utils/jwt";
+import { generateConfirmationToken, generateJWT, generatePasswordResetToken } from "../utils/jwt";
 import { transporter } from "../config/nodemailer";
 import { ConfirmEmail } from "../emails/ConfirmEmail";
-import { hashPassword } from "../utils/auth";
+import { comparePassword, hashPassword } from "../utils/auth";
 
 export class AuthController {
     static createAccount = async (req: Request, res: Response) => {
@@ -12,6 +12,7 @@ export class AuthController {
             const { email, rut } = req.body;
 
             // Check if the user already exists
+            /*
             const userExists = await User.findOne({ email });
 
             if(userExists) {
@@ -27,6 +28,7 @@ export class AuthController {
                 res.status(409).json({ message: error.message });
                 return
             }
+            */	
 
             const user = new User(req.body)
 
@@ -63,21 +65,27 @@ export class AuthController {
             const { token } = req.params;
             //console.log(token)
 
-            // Find the token in the DB
             const tokenRecord = await Token.findOne({ token, type: "admin_confirmation" });
+            
+            /*
+            // Find the token in the DB
             if(!tokenRecord) {
                 const error = new Error("Token no encontrado");
                 res.status(404).json({ message: error.message });
                 return
             }
+            */
 
             // Find the user in the DB
             const user = await User.findById(tokenRecord.userId);
+
+            /*
             if(!user) {
                 const error = new Error("Usuario no encontrado");
                 res.status(404).json({ message: error.message });
                 return
             }
+            */
 
             // Verify if the user is already confirmed
             if(user.confirmed) {
@@ -116,19 +124,25 @@ export class AuthController {
 
             // Find the token in the DB
             const tokenRecord = await Token.findOne({ token, type: "password_reset" });
+
+            /*
             if(!tokenRecord) {
                 const error = new Error("Token no encontrado");
                 res.status(404).json({ message: error.message });
                 return
             }
+            */
 
             // Find the user in the DB
             const user = await User.findById(tokenRecord.userId);
+
+            /*
             if(!user) {
                 const error = new Error("Usuario no encontrado");
                 res.status(404).json({ message: error.message });
                 return
             }
+            */
 
             // Verify if the user is already confirmed
             if(!user.confirmed) {
@@ -161,5 +175,66 @@ export class AuthController {
     }
 
     // Login
-    
+    static login = async (req: Request, res: Response) => {
+        try {
+            const { rut, email, password } = req.body;
+
+            const user = await User.findOne({ email });
+
+            if(!user) {
+                const error = new Error("El Usuario no existe");
+                res.status(404).json({ message: error.message });
+                return
+            }
+
+            const userRut = await User.findOne({ rut });
+
+            if(!userRut) {
+                const error = new Error("El RUT no existe");
+                res.status(404).json({ message: error.message });
+                return
+            }
+
+            if(!user.confirmed) {
+                const error = new Error("El Usuario no esta Confirmado");
+                res.status(409).json({ message: error.message });
+                return
+            }
+
+            if(!user.passwordSet) {
+                const error = new Error("La Contraseña no esta Establecida");
+                res.status(409).json({ message: error.message });
+                return
+            }
+
+            // Compare the password
+            const isMatch = await comparePassword(password, user.password);
+
+            /** Check if the passwords match */
+            if(!isMatch) {
+                const error = new Error("Contraseña Incorrecta");
+                res.status(401).json({ message: error.message });
+                return
+            }
+
+            /** Generate JWT for Auth */
+            const payload = { id: user.id };
+            const token = generateJWT(payload);
+
+            res.status(200).json({ 
+                message: "Inicio de Sesión Exitoso",
+                token
+            });
+        } catch (error) {
+            res.status(500).json({ message: "Internal Server Error" })
+        }
+    }
+
+    static forgotPassword = async (req: Request, res: Response) => {
+        try {
+            res.send("forgotPassword")
+        } catch (error) {
+            res.status(500).json({ message: "Internal Server Error" })
+        }
+    }
 }

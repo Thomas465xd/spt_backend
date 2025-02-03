@@ -2,6 +2,9 @@ import { Router } from "express";
 import { AuthController } from "../controllers/AuthController";
 import { body, param } from "express-validator";
 import { handleInputErrors } from "../middleware/validation";
+import { checkExistingUser } from "../middleware/auth";
+import { validateToken } from "../middleware/token";
+import { checkUserStatus } from "../middleware/state";
 
 const router = Router();
 
@@ -32,6 +35,7 @@ router.post("/create-account",
     body("address")
         .notEmpty().withMessage("La Dirección es obligatoria"),
     handleInputErrors,
+    checkExistingUser,
     AuthController.createAccount
 )
 
@@ -52,8 +56,30 @@ router.post("/set-password/:token",
             return true
         }),
     handleInputErrors,
+    validateToken("password_reset"),
+    checkUserStatus,
     AuthController.createPassword
 )
+
+/** Login User */
+router.post("/login",
+    body("rut")
+        .notEmpty().withMessage("El RUT es obligatorio")
+        .matches(/^\d{1,2}\.?\d{3}\.?\d{3}-[\dkK]$/)
+        .withMessage("Formato de RUT inválido. Ejemplo: 12.345.678-9"),
+    body("email")
+        .notEmpty().withMessage("El Email es obligatorio")
+        .isEmail().withMessage("El Email no es válido")
+        .normalizeEmail(),
+    body("password")
+        .notEmpty().withMessage("La contraseña no puede estar vacia"),
+    handleInputErrors,
+    
+    AuthController.login
+)
+
+/** Forgot Password */
+
 
 // Admin Auth Routes
 
@@ -62,10 +88,13 @@ router.post("/admin/confirm/:token",
     param("token")
         .notEmpty().withMessage("El Token de Ingreso es Obligatorio"),
     handleInputErrors,
+    validateToken("admin_confirmation"),
+    checkUserStatus,
     AuthController.confirmUser
 )
 
 /* Delete User */
 
+/* Block User */
 
 export default router
