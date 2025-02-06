@@ -14,10 +14,18 @@ export const generateJWT = (payload: UserPayLoad) => {
     return token;
 }
 
+// Token for Admin
+export const generateAdminJWT = (payload: UserPayLoad) => {
+    const token = jwt.sign(payload, process.env.ADMIN_SECRET!, { 
+        expiresIn: "7d"  // Token expires in 7 days
+    });
+    return token;
+}
+
 // Token for Account Confirmation
 export const generateConfirmationToken = (payload: UserPayLoad) => {
     const token = jwt.sign(payload, process.env.CONFIRMATION_SECRET!, { 
-        expiresIn: "7d"  // Token expires in 24 hours
+        expiresIn: "7d"  // Token expires in 7 days
     });
     return token;
 }
@@ -26,7 +34,7 @@ export const generateConfirmationToken = (payload: UserPayLoad) => {
 // Token for Password reset
 export const generatePasswordResetToken = (payload: UserPayLoad) => {
     const token = jwt.sign(payload, process.env.PASSWORD_RESET_SECRET!, { 
-        expiresIn: "7d"  // Token expires in 24 hours
+        expiresIn: "7d"  // Token expires in 7 days
     });
     return token;
 }

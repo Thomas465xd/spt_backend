@@ -39,7 +39,7 @@ export class ConfirmEmail {
                             <p><strong>📧 Correo:</strong> ${user.email}</p>
                         </div>
                         <div style="text-align: center; margin-top: 20px;">
-                            <a href="${process.env.BASE_URL}/admin/confirm/${user.token}" 
+                            <a href="${process.env.FRONTEND_URL}/admin/confirm/${user.token}" 
                                 style="display: inline-block; background-color: #212121; color: #ffffff; text-decoration: none; 
                                         padding: 12px 25px; font-size: 16px; border-radius: 5px; font-weight: bold;">
                                 ✅ Confirmar Usuario
@@ -70,7 +70,7 @@ export class ConfirmEmail {
 
     static sendConfirmationEmailToUser = async (user: UserEmailInterface) => {
         try {
-            const confirmationLink = `https://portal-spt.com/set-password?token=${user.token}`;
+            const confirmationLink = `${process.env.FRONTEND_URL}/auth/set-password/${user.token}`;
 
             const mailOptions = {
                 from: '"Portal SPT" <no-reply@portal-spt.com>',

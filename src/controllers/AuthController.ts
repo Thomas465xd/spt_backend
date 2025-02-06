@@ -1,8 +1,7 @@
 import type { Request, Response } from "express";
 import User from "../models/User";
 import Token from "../models/Token";
-import { generateConfirmationToken, generateJWT, generatePasswordResetToken } from "../utils/jwt";
-import { transporter } from "../config/nodemailer";
+import { generateAdminJWT, generateConfirmationToken, generateJWT, generatePasswordResetToken } from "../utils/jwt";
 import { ConfirmEmail } from "../emails/ConfirmEmail";
 import { comparePassword, hashPassword } from "../utils/auth";
 
@@ -59,60 +58,16 @@ export class AuthController {
         }
     }
 
-    static confirmUser = async (req: Request, res: Response) => {
+    static validateToken = async (req: Request, res: Response) => {
         try {
-            // Validate received token
-            const { token } = req.params;
-            //console.log(token)
-
-            const tokenRecord = await Token.findOne({ token, type: "admin_confirmation" });
+            const token = req.params;
             
-            /*
-            // Find the token in the DB
-            if(!tokenRecord) {
-                const error = new Error("Token no encontrado");
-                res.status(404).json({ message: error.message });
-                return
-            }
-            */
+            // Se valida la existencia del token en el middleware
 
-            // Find the user in the DB
-            const user = await User.findById(tokenRecord.userId);
-
-            /*
-            if(!user) {
-                const error = new Error("Usuario no encontrado");
-                res.status(404).json({ message: error.message });
-                return
-            }
-            */
-
-            // Verify if the user is already confirmed
-            if(user.confirmed) {
-                const error = new Error("El Usuario ya esta Confirmado");
-                res.status(409).json({ message: error.message });
-                return
-            }
-
-            // Confirm the user & Delete the token
-            user.confirmed = true;
-            
-            await Promise.allSettled([user.save(), tokenRecord.deleteOne()]);
-
-            // Generate new token for creating the password
-            await Token.create({
-                userId: user.id,
-                token: generatePasswordResetToken({ id: user.id }),
-                type: "password_reset"
-            });
-
-            ConfirmEmail.sendConfirmationEmailToUser({
-                email: user.email,
-                name: user.name,
-                token: tokenRecord.token
-            });
-
-            res.status(200).json({ message: "Usuario Confirmado y Email enviado para crear contraseña" })
+            res.status(200).json({ 
+                success: true,
+                message: "Token Valido, Configure su contraseña"
+            })
         } catch (error) {
             res.status(500).json({ message: "Internal Server Error" })
         }
@@ -121,6 +76,7 @@ export class AuthController {
     static createPassword = async (req: Request, res: Response) => {
         try {
             const { token } = req.params;
+            //const { password } = req.body;
 
             // Find the token in the DB
             const tokenRecord = await Token.findOne({ token, type: "password_reset" });
@@ -150,6 +106,8 @@ export class AuthController {
                 res.status(409).json({ message: error.message });
                 return
             }
+
+            //console.log(user.passwordSet)
 
             // Verify if the user has already set the password
             if(user.passwordSet) {
@@ -217,14 +175,15 @@ export class AuthController {
                 return
             }
 
-            /** Generate JWT for Auth */
-            const payload = { id: user.id };
-            const token = generateJWT(payload);
+        // Generar el token dependiendo si es admin o usuario normal
+        const payload = { id: user.id, admin: user.admin };
+        const token = user.admin ? generateAdminJWT(payload) : generateJWT(payload);
 
-            res.status(200).json({ 
-                message: "Inicio de Sesión Exitoso",
-                token
-            });
+        res.status(200).json({
+            message: "Inicio de sesión exitoso",
+            admin: user.admin,
+            token
+        });
         } catch (error) {
             res.status(500).json({ message: "Internal Server Error" })
         }

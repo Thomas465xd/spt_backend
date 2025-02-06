@@ -1,5 +1,63 @@
 import { Request, Response, NextFunction } from "express";
-import User from "../models/User";
+import jwt, { decode } from "jsonwebtoken";
+import User, { UserInterface } from "../models/User";
+import Token from "../models/Token";
+
+declare global {
+    namespace Express {
+        interface Request {
+            user?: UserInterface;
+        }
+    }
+}
+
+export const authenticate = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const authHeader = req.headers.authorization;
+
+        // Validar existencia del header
+        if(!authHeader) {
+            res.status(401).json({ message: "No autorizado o Token no proporcionado" });
+            return
+        }
+
+        const token = authHeader.split(" ")[1];
+
+        // Intentar decodificar el token con ambas claves
+        let decoded;
+        try {
+            decoded = jwt.verify(token, process.env.ADMIN_SECRET!);
+        } catch {
+            try {
+                decoded = jwt.verify(token, process.env.JWT_SECRET!);
+            } catch {
+                res.status(401).json({ message: "Token inválido" });
+                return
+            }
+        }
+
+        // Verificar si el token tiene el formato esperado
+        if (typeof decoded !== "object" || !decoded.id) {
+            res.status(401).json({ message: "Token inválido" });
+            return
+        }
+
+        // Buscar el usuario por el ID
+        const user = await User.findById(decoded.id).select("_id name email admin");
+
+        if(!user) {
+            res.status(404).json({ message: "Usuario no encontrado" });
+            return
+        }
+
+        // Agregar usuario a la petición
+        req.user = user;
+
+        next();
+    } catch (error) {
+        res.status(500).json({ message: "Error interno del servidor" });
+    }
+}
 
 export const checkExistingUser = async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -21,4 +79,42 @@ export const checkExistingUser = async (req: Request, res: Response, next: NextF
     } catch (error) {
         res.status(500).json({ message: "Error interno del servidor" });
     }
+};
+
+export const checkUserStatus = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const { tokenRecord } = req.body;
+        const user = await User.findById(tokenRecord.userId);
+
+        if (!user) {
+            res.status(404).json({ message: "Usuario no encontrado" });
+            return
+        }
+
+        req.body.user = user; // Guardamos el usuario en la request
+
+        next();
+    } catch (error) {
+        res.status(500).json({ message: "Error interno del servidor" });
+    }
+};
+
+export const validateToken = (type: "admin_confirmation" | "password_reset") => {
+    return async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const { token } = req.params;
+
+            const tokenRecord = await Token.findOne({ token, type });
+
+            if (!tokenRecord) {
+                res.status(404).json({ message: "Token no encontrado o inválido" });
+                return
+            }
+
+            req.body.tokenRecord = tokenRecord; // Guardamos el token en la request
+            next();
+        } catch (error) {
+            res.status(500).json({ message: "Error interno del servidor" });
+        }
+    };
 };
