@@ -101,5 +101,14 @@ export class AdminController {
             res.status(500).json({ message: "Error interno del servidor" });
         }
     };
-    
+
+    static getAuthenticatedUser = async (req: Request, res: Response) => {
+        try {
+            const user = req.user;
+
+            res.status(200).json( user );
+        } catch (error) {
+            res.status(500).json({ message: "Error interno del servidor" });
+        }
+    }
 }

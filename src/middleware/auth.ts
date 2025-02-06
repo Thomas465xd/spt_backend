@@ -14,6 +14,7 @@ declare global {
 export const authenticate = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const authHeader = req.headers.authorization;
+        //console.log(authHeader);
 
         // Validar existencia del header
         if(!authHeader) {
@@ -58,6 +59,15 @@ export const authenticate = async (req: Request, res: Response, next: NextFuncti
         res.status(500).json({ message: "Error interno del servidor" });
     }
 }
+
+export const authorizeAdmin = (req: Request, res: Response, next: NextFunction) => {
+    if (!req.user || !req.user.admin) {
+        res.status(403).json({ message: "Acceso denegado. Se requieren permisos de administrador." });
+        return
+    }
+    next();
+};
+
 
 export const checkExistingUser = async (req: Request, res: Response, next: NextFunction) => {
     try {

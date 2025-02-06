@@ -2,7 +2,7 @@ import { Router } from "express";
 import { AuthController } from "../controllers/AuthController";
 import { body, param } from "express-validator";
 import { handleInputErrors } from "../middleware/validation";
-import { authenticate, checkExistingUser, checkUserStatus, validateToken } from "../middleware/auth";
+import { authenticate, authorizeAdmin, checkExistingUser, checkUserStatus, validateToken } from "../middleware/auth";
 import { AdminController } from "../controllers/AdminController";
 
 const router = Router();
@@ -104,6 +104,7 @@ router.post("/admin/confirm/:token",
 /* Get Confirmed Users */
 router.get("/admin/users", 
     authenticate,
+    authorizeAdmin,
     handleInputErrors,
     AdminController.getConfirmedUsers
 )
@@ -111,9 +112,33 @@ router.get("/admin/users",
 /** Get Unconfirmed Users */
 router.get("/admin/unconfirmed-users",
     authenticate,
+    authorizeAdmin,
     handleInputErrors,
     AdminController.getUnconfirmedUsers
 )
+
+
+/* Delete User TO DO*/
+router.delete("/admin/user/:id",
+    param("id")
+    .notEmpty().withMessage("El ID del Usuario es Obligatorio")
+    .isMongoId().withMessage("El ID del Usuario no es Valido"),
+    authenticate,
+    authorizeAdmin,
+    handleInputErrors,
+)
+
+/* Block User TO DO*/
+router.patch("/admin/block/:id",
+    param("id")
+    .notEmpty().withMessage("El ID del Usuario es Obligatorio")
+    .isMongoId().withMessage("El ID del Usuario no es Valido"),
+    authenticate,
+    authorizeAdmin,
+    handleInputErrors,
+)
+
+// Routes for admin & user
 
 /** Get user by id */
 router.get("/admin/user/:id",
@@ -125,22 +150,11 @@ router.get("/admin/user/:id",
     AdminController.getUserById
 )
 
-/* Delete User TO DO*/
-router.delete("/admin/user/:id",
-    param("id")
-        .notEmpty().withMessage("El ID del Usuario es Obligatorio")
-        .isMongoId().withMessage("El ID del Usuario no es Valido"),
+/** Get authenticated user */
+router.get("/user",
     authenticate,
     handleInputErrors,
-)
-
-/* Block User TO DO*/
-router.patch("/admin/block/:id",
-    param("id")
-        .notEmpty().withMessage("El ID del Usuario es Obligatorio")
-        .isMongoId().withMessage("El ID del Usuario no es Valido"),
-    authenticate,
-    handleInputErrors,
+    AdminController.getAuthenticatedUser
 )
 
 export default router
