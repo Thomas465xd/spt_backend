@@ -75,11 +75,11 @@ export class ConfirmEmail {
             const mailOptions = {
                 from: '"Portal SPT" <no-reply@portal-spt.com>',
                 to: user.email,
-                subject: "¡Tu cuenta ha sido aprobada! Configura tu contraseña",
+                subject: "¡Tu cuenta ha sido aprobada! ✅ Configura tu contraseña",
                 html: `
                     <div style="max-width: 600px; margin: auto; font-family: Arial, sans-serif; background-color: #000; padding: 20px; border-radius: 10px; color: #fff;">
                         <div style="background-color: #ff7300; padding: 15px; border-radius: 8px 8px 0 0; text-align: center;">
-                            <h2 style="margin: 0; color: #fff;">¡Bienvenido a Portal SPT!</h2>
+                            <h2 style="margin: 0; color: #fff;">¡Bienvenido a Portal SPT! 👋</h2>
                         </div>
                         <div style="padding: 20px; background-color: #222; border-radius: 0 0 8px 8px;">
                             <p>Hola <strong>${user.name}</strong>,</p>
@@ -100,4 +100,41 @@ export class ConfirmEmail {
             console.error("Error sending confirmation email:", error);
         }
     }
+
+    static sendPasswordResetEmail = async (user: UserEmailInterface) => {
+        try {
+            const resetLink = `${process.env.FRONTEND_URL}/auth/reset-password/${user.token}`;
+    
+            const mailOptions = {
+                from: '"Portal SPT" <no-reply@portal-spt.com>',
+                to: user.email,
+                subject: "🔐 Restablece tu contraseña",
+                html: `
+                    <div style="max-width: 600px; margin: auto; font-family: Arial, sans-serif; background-color: #000; padding: 20px; border-radius: 10px; color: #fff;">
+                        <div style="background-color: #ff7300; padding: 15px; border-radius: 8px 8px 0 0; text-align: center;">
+                            <h2 style="margin: 0; color: #fff;">Restablecer tu contraseña ⚙️</h2>
+                        </div>
+                        <div style="padding: 20px; background-color: #222; border-radius: 0 0 8px 8px;">
+                            <p>👋 Hola <strong>${user.name}</strong>,</p>
+                            <p>Hemos recibido una solicitud para restablecer tu contraseña en <strong>Portal SPT</strong>. Si realizaste esta solicitud, haz clic en el botón de abajo para crear una nueva contraseña.</p>
+                            <div style="text-align: center; margin: 20px 0;">
+                                <a href="${resetLink}" style="background-color: #ff7300; color: #fff; padding: 12px 20px; text-decoration: none; font-weight: bold; border-radius: 5px; display: inline-block;">Restablecer Contraseña</a>
+                            </div>
+                            <p>Si no solicitaste este cambio, puedes ignorar este mensaje. Tu contraseña actual seguirá siendo la misma. 🚀</p>
+                            <p style="color: #ff7300; text-align: center;">Equipo Portal SPT</p>
+                        </div>
+                        <p style="text-align: center; font-size: 12px; margin-top: 15px; color: #aaa;">
+                            © ${new Date().getFullYear()} portal SPT | Todos los derechos reservados.
+                        </p>
+                    </div>
+                `
+            };
+    
+            await transporter.sendMail(mailOptions);
+            console.log("✅ Password reset email sent successfully!");
+        } catch (error) {
+            console.error("❌ Error sending password reset email:", error);
+        }
+    };
+    
 }

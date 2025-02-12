@@ -2,7 +2,7 @@ import { Router } from "express";
 import { AuthController } from "../controllers/AuthController";
 import { body, param } from "express-validator";
 import { handleInputErrors } from "../middleware/validation";
-import { authenticate, authorizeAdmin, checkExistingUser, checkUserStatus, validateToken } from "../middleware/auth";
+import { authenticate, authorizeAdmin, checkExistingUser, checkUserStatus, userExists, validateToken } from "../middleware/auth";
 import { AdminController } from "../controllers/AdminController";
 
 const router = Router();
@@ -87,7 +87,37 @@ router.post("/login",
 )
 
 /** Forgot Password */
+router.post("/forgot-password", 
+    body("email")
+        .notEmpty().withMessage("El Email es Obligatorio")
+        .isEmail().withMessage("El Email no es Valido")
+        .normalizeEmail(),
+    handleInputErrors,
+    AuthController.forgotPassword
+)
 
+/** Reset User Password */
+router.post("/reset-password/:token",
+    param("token")
+        .notEmpty().withMessage("El Token de Ingreso es Obligatorio"),
+    body("password")
+        .isLength({ min: 8 }).withMessage("La contraseña debe tener al menos 8 caracteres")
+        .trim()
+        .escape(), 
+    body("confirmPassword")
+        .notEmpty().withMessage("La confirmación de la contraseña es Obligatoria")
+        .trim()
+        .custom((value, { req }) => {
+            if(value !== req.body.password) {
+                throw new Error("Las contraseñas no coinciden");
+            }
+            return true
+        }),
+    handleInputErrors,
+    validateToken("password_reset"),
+    checkUserStatus,
+    AuthController.resetPassword
+)
 
 //! Admin Auth Routes
 
@@ -121,21 +151,24 @@ router.get("/admin/unconfirmed-users",
 /* Delete User TO DO*/
 router.delete("/admin/user/:id",
     param("id")
-    .notEmpty().withMessage("El ID del Usuario es Obligatorio")
-    .isMongoId().withMessage("El ID del Usuario no es Valido"),
+        .notEmpty().withMessage("El ID del Usuario es Obligatorio")
+        .isMongoId().withMessage("El ID del Usuario no es Valido"),
     authenticate,
     authorizeAdmin,
     handleInputErrors,
+    userExists,
 )
 
 /* Block User TO DO*/
-router.patch("/admin/block/:id",
+router.patch("/admin/update-status/:id",
     param("id")
-    .notEmpty().withMessage("El ID del Usuario es Obligatorio")
-    .isMongoId().withMessage("El ID del Usuario no es Valido"),
+        .notEmpty().withMessage("El ID del Usuario es Obligatorio")
+        .isMongoId().withMessage("El ID del Usuario no es Valido"),
     authenticate,
     authorizeAdmin,
     handleInputErrors,
+    userExists, // Check if the user exists after handleInputErrors
+    AdminController.updateUserStatus
 )
 
 // Routes for admin & user
@@ -147,6 +180,7 @@ router.get("/admin/user/:id",
         .isMongoId().withMessage("El ID del Usuario no es Valido"),
     authenticate,
     handleInputErrors,
+    userExists,
     AdminController.getUserById
 )
 

@@ -67,9 +67,27 @@ export class AdminController {
 
     static getConfirmedUsers = async (req: Request, res: Response) => {
         try {
-            const users = await User.find({ confirmed: true });
+            // Get the page and perPage query parameters (default values if not provided)
+            const page = parseInt(req.query.page as string) || 1;
+            const perPage = parseInt(req.query.perPage as string) || 10;
+
+            // Calculate skip and limit for pagination
+            const skip = (page - 1) * perPage;
+            const limit = perPage;
+
+            // Get the total number of confirmed users
+            const totalUsers = await User.countDocuments({ confirmed: true });
+
+            // Fetch the users for the current page with pagination
+            const users = await User.find({ confirmed: true })
+                .skip(skip)
+                .limit(limit)
+                .sort({ createdAt: -1 }); // Sort by createdAt in descending order
+
+            // Calculate the total number of pages
+            const totalPages = Math.ceil(totalUsers / perPage);
             
-            res.status(200).json({ users });
+            res.status(200).json({ users, totalUsers, totalPages });
         } catch (error) {
             res.status(500).json({ message: "Internal Server Error" })
         }
@@ -77,9 +95,27 @@ export class AdminController {
 
     static getUnconfirmedUsers = async (req: Request, res: Response) => {
         try {
-            const users = await User.find({ confirmed: false });
+            // Get the page and perPage query parameters (default values if not provided)
+            const page = parseInt(req.query.page as string) || 1;
+            const perPage = parseInt(req.query.perPage as string) || 10;
 
-            res.status(200).json({ users });
+            // Calculate skip and limit for pagination
+            const skip = (page - 1) * perPage;
+            const limit = perPage;
+
+            // Get the total number of unconfirmed users
+            const totalUnconfirmedUsers = await User.countDocuments({ confirmed: false });
+
+            // Fetch the users for the current page with pagination
+            const users = await User.find({ confirmed: false }) 
+                .skip(skip)
+                .limit(limit)
+                .sort({ createdAt: -1 }); // Sort by createdAt in descending order
+
+            // Calculate the total number of pages
+            const totalPages = Math.ceil(totalUnconfirmedUsers / perPage);
+
+            res.status(200).json({users, totalUnconfirmedUsers, totalPages});
         } catch (error) {
             res.status(500).json({ message: "Internal Server Error" })
         }
@@ -90,11 +126,6 @@ export class AdminController {
             const { id } = req.params;
     
             const user = await User.findById(id);
-    
-            if (!user) {
-                res.status(404).json({ message: "Usuario no encontrado" });
-                return
-            }
     
             res.status(200).json({ user });
         } catch (error) {
@@ -109,6 +140,29 @@ export class AdminController {
             res.status(200).json( user );
         } catch (error) {
             res.status(500).json({ message: "Error interno del servidor" });
+            return
         }
     }
+
+    static updateUserStatus = async (req: Request, res: Response) => {
+        try {
+            const user = req.body.user;
+            //console.log(user)
+
+            if(user.confirmed) {
+                user.confirmed = false;
+                await user.save();
+                res.status(200).json({ message: "Usuario Bloqueado Exitosamente" });
+            } else {
+                user.confirmed = true;
+                await user.save();
+                res.status(200).json({ message: "Usuario Desbloqueado Exitosamente" });
+            }
+        } catch (error) {
+            res.status(500).json({ message: "Error interno del servidor" });
+            return
+        }
+    }
+
+    
 }

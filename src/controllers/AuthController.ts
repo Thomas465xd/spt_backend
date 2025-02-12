@@ -191,9 +191,97 @@ export class AuthController {
 
     static forgotPassword = async (req: Request, res: Response) => {
         try {
-            res.send("forgotPassword")
+            const { email } = req.body;
+
+            const user = await User.findOne({ email });
+
+            if(!user) {
+                const error = new Error("El Usuario no existe");
+                res.status(404).json({ message: error.message });
+                return
+            }
+
+            if(!user.confirmed) {
+                const error = new Error("El Usuario no esta Confirmado");
+                res.status(409).json({ message: error.message });
+                return
+            }
+
+            const tokenRecord = await Token.findOne({ userId: user.id, type: "password_reset" });
+
+            if(tokenRecord) {
+                await tokenRecord.deleteOne();
+            }
+
+            if(!user.passwordSet) {
+                // Generate a password reset token
+                const passwordResetToken = await Token.create({
+                    userId: user.id,
+                    token: generatePasswordResetToken({ id: user.id }),
+                    type: "password_reset"
+                });
+
+                /** Send the Password Reset Email to the User */
+                ConfirmEmail.sendConfirmationEmailToUser({
+                    email: user.email,
+                    name: user.name,
+                    token: passwordResetToken.token
+                })
+
+                res.status(200).json({ message: "Tu Contraseña no esta Establecida, recibiras un correo para establecerla" });
+            } else {
+                // Generate a password reset token
+                const passwordResetToken = await Token.create({
+                    userId: user.id,
+                    token: generatePasswordResetToken({ id: user.id }),
+                    type: "password_reset"
+                });
+
+                /** Send the Password Reset Email to the User */
+                ConfirmEmail.sendPasswordResetEmail({
+                    email: user.email,
+                    name: user.name,
+                    token: passwordResetToken.token
+                })
+
+                res.status(200).json({ message: "Recibiras un correo para establecer tu contraseña" });
+            }
         } catch (error) {
             res.status(500).json({ message: "Internal Server Error" })
+        }
+    }
+
+    // Reset User Password
+    static resetPassword = async (req: Request, res: Response) => {
+        try {
+            const { token } = req.params;
+            
+            // Find the token in the DB
+            const tokenRecord = await Token.findOne({ token, type: "password_reset" });
+
+            // Find the user in the DB
+            const user = await User.findById(tokenRecord.userId);
+
+            // Verify if the user is already confirmed
+            if(!user.confirmed) {
+                const error = new Error("El Usuario no esta Confirmado");
+                res.status(409).json({ message: error.message });
+                return
+            }
+
+            // Set the password & Delete the token
+            user.password = await hashPassword(req.body.password);
+
+            // Delete the token
+            await Promise.allSettled([
+                user.save(),
+                tokenRecord.deleteOne()
+            ]);
+
+            res.status(200).json({ message: "Contraseña Reestablecida Exitosamente, inicie sesión" });
+        } catch (error) {
+            res.status(500).json({ message: "Internal Server Error" })
+            return
         }
     }
 }

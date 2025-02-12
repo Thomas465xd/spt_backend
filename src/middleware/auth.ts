@@ -11,6 +11,7 @@ declare global {
     }
 }
 
+// Validates for auth token
 export const authenticate = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const authHeader = req.headers.authorization;
@@ -60,6 +61,7 @@ export const authenticate = async (req: Request, res: Response, next: NextFuncti
     }
 }
 
+// Validates for AdminToken
 export const authorizeAdmin = (req: Request, res: Response, next: NextFunction) => {
     if (!req.user || !req.user.admin) {
         res.status(403).json({ message: "Acceso denegado. Se requieren permisos de administrador." });
@@ -68,7 +70,7 @@ export const authorizeAdmin = (req: Request, res: Response, next: NextFunction) 
     next();
 };
 
-
+// Validates for an already existing users when registering a new one
 export const checkExistingUser = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const { email, rut } = req.body;
@@ -91,9 +93,11 @@ export const checkExistingUser = async (req: Request, res: Response, next: NextF
     }
 };
 
+// Checks if the user exists
 export const checkUserStatus = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const { tokenRecord } = req.body;
+
         const user = await User.findById(tokenRecord.userId);
 
         if (!user) {
@@ -109,6 +113,7 @@ export const checkUserStatus = async (req: Request, res: Response, next: NextFun
     }
 };
 
+// Validates the token
 export const validateToken = (type: "admin_confirmation" | "password_reset") => {
     return async (req: Request, res: Response, next: NextFunction) => {
         try {
@@ -128,3 +133,23 @@ export const validateToken = (type: "admin_confirmation" | "password_reset") => 
         }
     };
 };
+
+// Validates if the user exists
+export const userExists = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const { id } = req.params;
+
+        const user = await User.findById(id);
+        if(!user) {
+            const error = new Error("Usuario no Encontrado");
+            res.status(404).json({ message: error.message });
+            return
+        }
+
+        req.body.user = user;
+        next();
+    } catch (error) {
+        res.status(500).json({ message: "Error Interno del Servidor"})
+        return
+    }
+}
