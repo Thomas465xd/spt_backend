@@ -8,27 +8,6 @@ import { comparePassword, hashPassword } from "../utils/auth";
 export class AuthController {
     static createAccount = async (req: Request, res: Response) => {
         try {
-            const { email, rut } = req.body;
-
-            // Check if the user already exists
-            /*
-            const userExists = await User.findOne({ email });
-
-            if(userExists) {
-                const error = new Error("El Usuario ya esta Registrado");
-                res.status(409).json({ message: error.message });
-                return
-            }
-
-            const userRutExists = await User.findOne({ rut });
-
-            if(userRutExists) { 
-                const error = new Error("El RUT ya esta Registrado");
-                res.status(409).json({ message: error.message });
-                return
-            }
-            */	
-
             const user = new User(req.body)
 
             // Generate a verification token
@@ -76,29 +55,12 @@ export class AuthController {
     static createPassword = async (req: Request, res: Response) => {
         try {
             const { token } = req.params;
-            //const { password } = req.body;
 
             // Find the token in the DB
             const tokenRecord = await Token.findOne({ token, type: "password_reset" });
 
-            /*
-            if(!tokenRecord) {
-                const error = new Error("Token no encontrado");
-                res.status(404).json({ message: error.message });
-                return
-            }
-            */
-
             // Find the user in the DB
             const user = await User.findById(tokenRecord.userId);
-
-            /*
-            if(!user) {
-                const error = new Error("Usuario no encontrado");
-                res.status(404).json({ message: error.message });
-                return
-            }
-            */
 
             // Verify if the user is already confirmed
             if(!user.confirmed) {
@@ -106,8 +68,6 @@ export class AuthController {
                 res.status(409).json({ message: error.message });
                 return
             }
-
-            //console.log(user.passwordSet)
 
             // Verify if the user has already set the password
             if(user.passwordSet) {
@@ -254,6 +214,7 @@ export class AuthController {
     // Reset User Password
     static resetPassword = async (req: Request, res: Response) => {
         try {
+            // Saca el token de la url
             const { token } = req.params;
             
             // Find the token in the DB

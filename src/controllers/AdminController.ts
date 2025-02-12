@@ -10,29 +10,11 @@ export class AdminController {
         try {
             // Validate received token
             const { token } = req.params;
-            //console.log(token)
 
             const tokenRecord = await Token.findOne({ token, type: "admin_confirmation" });
-            
-            /*
-            // Find the token in the DB
-            if(!tokenRecord) {
-                const error = new Error("Token no encontrado");
-                res.status(404).json({ message: error.message });
-                return
-            }
-            */
 
             // Find the user in the DB
             const user = await User.findById(tokenRecord.userId);
-
-            /*
-            if(!user) {
-                const error = new Error("Usuario no encontrado");
-                res.status(404).json({ message: error.message });
-                return
-            }
-            */
 
             // Verify if the user is already confirmed
             if(user.confirmed) {
@@ -104,7 +86,7 @@ export class AdminController {
             const limit = perPage;
 
             // Get the total number of unconfirmed users
-            const totalUnconfirmedUsers = await User.countDocuments({ confirmed: false });
+            const totalUsers = await User.countDocuments({ confirmed: false });
 
             // Fetch the users for the current page with pagination
             const users = await User.find({ confirmed: false }) 
@@ -113,9 +95,9 @@ export class AdminController {
                 .sort({ createdAt: -1 }); // Sort by createdAt in descending order
 
             // Calculate the total number of pages
-            const totalPages = Math.ceil(totalUnconfirmedUsers / perPage);
+            const totalPages = Math.ceil(totalUsers / perPage);
 
-            res.status(200).json({users, totalUnconfirmedUsers, totalPages});
+            res.status(200).json({users, totalUsers, totalPages});
         } catch (error) {
             res.status(500).json({ message: "Internal Server Error" })
         }

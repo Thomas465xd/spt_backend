@@ -134,7 +134,7 @@ export const validateToken = (type: "admin_confirmation" | "password_reset") => 
     };
 };
 
-// Validates if the user exists
+// Validates if the user exists based on the id
 export const userExists = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const { id } = req.params;
