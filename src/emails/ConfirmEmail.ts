@@ -1,6 +1,7 @@
 import { transporter } from "../config/nodemailer";
 
 interface EmailInterface {
+    userId: string;
     email: string;
     name: string;
     businessName: string;
@@ -39,7 +40,7 @@ export class ConfirmEmail {
                             <p><strong>📧 Correo:</strong> ${user.email}</p>
                         </div>
                         <div style="text-align: center; margin-top: 20px;">
-                            <a href="${process.env.FRONTEND_URL}/admin/confirm/${user.token}" 
+                            <a href="${process.env.FRONTEND_URL}/admin/confirm?confirmUser=${user.userId}" 
                                 style="display: inline-block; background-color: #212121; color: #ffffff; text-decoration: none; 
                                         padding: 12px 25px; font-size: 16px; border-radius: 5px; font-weight: bold;">
                                 ✅ Confirmar Usuario

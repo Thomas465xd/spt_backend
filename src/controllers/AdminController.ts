@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import User from "../models/User";
+import User, { UserInterface } from "../models/User";
 import Token from "../models/Token";
 import { generatePasswordResetToken } from "../utils/jwt";
 import { ConfirmEmail } from "../emails/ConfirmEmail";
@@ -92,7 +92,7 @@ export class AdminController {
             const users = await User.find({ confirmed: false }) 
                 .skip(skip)
                 .limit(limit)
-                .sort({ createdAt: -1 }); // Sort by createdAt in descending order
+                .sort({ passwordSet: 1, createdAt: -1 }); // Sort by createdAt in descending order
 
             // Calculate the total number of pages
             const totalPages = Math.ceil(totalUsers / perPage);
@@ -108,6 +108,19 @@ export class AdminController {
             const { id } = req.params;
     
             const user = await User.findById(id);
+
+            if(!user.confirmed) {
+                const { token } = await Token.findOne({ userId: id, type: "admin_confirmation" });
+            
+                if(!token) {
+                    const error = new Error("El Token del usuario a expirado.");
+                    res.status(409).json({ message: error.message });
+                    return
+                }
+
+                res.status(200).json({ user, token });
+                return
+            }
     
             res.status(200).json({ user });
         } catch (error) {
@@ -146,5 +159,24 @@ export class AdminController {
         }
     }
 
-    
+    static deleteUser = async (req: Request, res: Response) => {
+        try {
+            const user = req.body.user as UserInterface; 
+
+            if(user.passwordSet) {
+                const error = new Error("No se puede eliminar un usuario con una contraseña establecida, puedes bloquearlo o desbloquearlo.");
+                res.status(409).json({ message: error.message });
+                return
+            } else {
+                await user.deleteOne();
+                await Token.deleteMany({ userId: user.id });
+                
+                res.status(200).json({ message: "Usuario Eliminado Exitosamente" });
+                return
+            }
+        } catch (error) {
+            res.status(500).json({ message: "Error interno del servidor" });
+            return
+        }
+    }
 }

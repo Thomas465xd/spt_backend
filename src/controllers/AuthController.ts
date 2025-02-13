@@ -18,6 +18,7 @@ export class AuthController {
 
             /** Send the Confirmation Email to the Admin */
             ConfirmEmail.sendConfirmationEmailToAdmin({
+                userId: user.id,
                 email: user.email,
                 name: user.name,
                 businessName: user.businessName,

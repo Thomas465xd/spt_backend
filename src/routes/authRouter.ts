@@ -149,7 +149,7 @@ router.get("/admin/unconfirmed-users",
 
 
 /* Delete User TO DO*/
-router.delete("/admin/user/:id",
+router.delete("/admin/delete-user/:id",
     param("id")
         .notEmpty().withMessage("El ID del Usuario es Obligatorio")
         .isMongoId().withMessage("El ID del Usuario no es Valido"),
@@ -157,6 +157,7 @@ router.delete("/admin/user/:id",
     authorizeAdmin,
     handleInputErrors,
     userExists,
+    AdminController.deleteUser
 )
 
 /* Block User TO DO*/
