@@ -4,6 +4,7 @@ import { body, param } from "express-validator";
 import { handleInputErrors } from "../middleware/validation";
 import { authenticate, authorizeAdmin, checkExistingUser, checkUserStatus, userExists, validateToken } from "../middleware/auth";
 import { AdminController } from "../controllers/AdminController";
+import { ProfileController } from "../controllers/ProfileController";
 
 const router = Router();
 
@@ -119,6 +120,51 @@ router.post("/reset-password/:token",
     AuthController.resetPassword
 )
 
+//* Auth Client Routes (Profile) */
+
+/** Update User Profile */
+router.patch("/profile/update",
+    body("name")
+        .notEmpty().withMessage("El Nombre no puede ir vacío"), 
+    body("businessName")
+        .notEmpty().withMessage("El Nombre de la Empresa es Obligatorio"),
+    body("email")
+        .notEmpty().withMessage("El Email es Obligatorio")
+        .isEmail().withMessage("El Email no es Valido")
+        .normalizeEmail(),
+    body("phone")
+        .matches(/^(\+56\s?9\d{8}|9\d{8})$/)
+        .trim()
+        .withMessage("Formato de teléfono inválido. Example: +56912345678 or 912345678"),
+    body("address")
+        .notEmpty().withMessage("La Dirección es Obligatoria"),
+    handleInputErrors,
+    authenticate,
+    ProfileController.updateProfile
+)
+
+/** Update User Password in Profile Config */
+router.patch("/profile/update-password",
+    body("currentPassword")
+        .notEmpty().withMessage("La Contraseña Actual es Obligatoria"),
+    body("newPassword")
+        .isLength({ min: 8 }).withMessage("La contraseña debe tener al menos 8 caracteres")
+        .trim()
+        .escape(),
+    body("confirmPassword")
+        .notEmpty().withMessage("La confirmación de la contraseña es Obligatoria")
+        .trim()
+        .custom((value, { req }) => {
+            if(value !== req.body.newPassword) {
+                throw new Error("Las contraseñas no coinciden");
+            }
+            return true
+        }),
+    handleInputErrors,
+    authenticate,
+    ProfileController.updatePassword
+)
+
 //! Admin Auth Routes
 
 /* Confirm Account */
@@ -148,7 +194,7 @@ router.get("/admin/unconfirmed-users",
 )
 
 
-/* Delete User TO DO*/
+/* Delete User */
 router.delete("/admin/delete-user/:id",
     param("id")
         .notEmpty().withMessage("El ID del Usuario es Obligatorio")
@@ -160,7 +206,7 @@ router.delete("/admin/delete-user/:id",
     AdminController.deleteUser
 )
 
-/* Block User TO DO*/
+/* Block User */
 router.patch("/admin/update-status/:id",
     param("id")
         .notEmpty().withMessage("El ID del Usuario es Obligatorio")
@@ -171,8 +217,6 @@ router.patch("/admin/update-status/:id",
     userExists, // Check if the user exists after handleInputErrors
     AdminController.updateUserStatus
 )
-
-// Routes for admin & user
 
 /** Get user by id */
 router.get("/admin/user/:id",
