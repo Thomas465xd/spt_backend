@@ -45,7 +45,7 @@ export const authenticate = async (req: Request, res: Response, next: NextFuncti
         }
 
         // Buscar el usuario por el ID
-        const user = await User.findById(decoded.id).select("_id name email admin");
+        const user = await User.findById(decoded.id).select("_id name businessName rut businessRut email phone address admin");
 
         if(!user) {
             res.status(404).json({ message: "Usuario no encontrado" });
