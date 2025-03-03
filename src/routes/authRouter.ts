@@ -143,6 +143,21 @@ router.patch("/profile/update",
     ProfileController.updateProfile
 )
 
+/** Update Extra User Info (Address, Postcode, etc...) */
+router.patch("/profile/update-shipping-info",
+    body("region").optional().isIn([
+        "Arica y Parinacota", "Tarapacá", "Antofagasta", "Atacama", "Coquimbo",
+        "Valparaíso", "Metropolitana de Santiago", "O'Higgins", "Maule", "Ñuble",
+        "Biobío", "La Araucanía", "Los Ríos", "Los Lagos", "Aysén", "Magallanes"
+    ]).withMessage("Región inválida."),
+    body("postalCode").optional()
+        .matches(/^\d{7}$/)
+        .withMessage("El Código Postal debe tener exactamente 7 dígitos numéricos."),
+    handleInputErrors,
+    authenticate,
+    ProfileController.updateExtraInfo
+)
+
 /** Update User Password in Profile Config */
 router.patch("/profile/update-password",
     body("currentPassword")

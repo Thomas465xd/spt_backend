@@ -1,17 +1,47 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
+const userRegion = [
+    "Arica y Parinacota",
+    "Tarapacá",
+    "Antofagasta",
+    "Atacama",
+    "Coquimbo",
+    "Valparaíso",
+    "Metropolitana de Santiago",
+    "O'Higgins",
+    "Maule",
+    "Ñuble",
+    "Biobío",
+    "La Araucanía",
+    "Los Ríos",
+    "Los Lagos",
+    "Aysén",
+    "Magallanes"
+] as const;
+
 export interface UserInterface extends Document {
+    // Base user info
     name: string
     businessName: string
     rut: string
     businessRut: string
     email: string
     phone: string
-    address: string
     password: string
+
+    // User Status
     confirmed: boolean
     passwordSet: boolean
     admin: boolean
+
+    // Address Info
+    address: string
+    region: string
+    city: string
+    province: string
+    reference: string
+    postalCode: string
+    country: string
 }
 
 const userSchema : Schema = new Schema({
@@ -48,11 +78,8 @@ const userSchema : Schema = new Schema({
         required: true,
         trim: true
     },
-    address: {
-        type: String,
-        required: true,
-        trim: true
-    },
+
+    // User Status
     password: {
         type: String,
         required: false
@@ -68,6 +95,44 @@ const userSchema : Schema = new Schema({
     admin: {
         type: Boolean,
         default: false
+    },
+
+    // Address
+    address: {
+        type: String,
+        required: true,
+        trim: true
+    },
+    region: {
+        type: String,
+        required: false,
+        trim: true,
+        enum: userRegion
+    },
+    city: {
+        type: String,
+        required: false,
+        trim: true
+    },
+    province: {
+        type: String,
+        required: false,
+        trim: true
+    }, 
+    reference: {
+        type: String,
+        required: false,
+        trim: true
+    },
+    postalCode: {
+        type: String,
+        required: false,
+        trim: true
+    },
+    country: {
+        type: String,
+        required: false,
+        trim: true
     }
 }, {timestamps: true})
 

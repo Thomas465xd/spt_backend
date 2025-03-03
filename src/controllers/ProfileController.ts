@@ -40,6 +40,33 @@ export class ProfileController {
         }
     }
 
+    static updateExtraInfo = async (req: Request, res: Response) => {
+        try {
+            const user = req.user as UserInterface;
+            const { country, region, city, province, reference, postalCode } = req.body;
+
+            if(!country && !region && !city && !province && !reference && !postalCode) {
+                const error = new Error("No se proporcionaron datos");
+                res.status(400).json({ message: error.message });
+                return
+            }
+
+            user.country = country;
+            user.region = region;
+            user.city = city;
+            user.province = province;
+            user.reference = reference;
+            user.postalCode = postalCode;
+
+            user.save();
+
+            res.status(200).json({ message: "Información Adicional Actualizada Exitosamente", user });
+        } catch (error) {
+            res.status(500).json({ message: "Error Interno del Servidor" });
+            return
+        }
+    }
+
     static updatePassword = async (req: Request, res: Response) => {
         try {
             const { currentPassword, newPassword } = req.body;

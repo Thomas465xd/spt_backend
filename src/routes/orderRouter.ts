@@ -56,7 +56,7 @@ router.post(
 		.withMessage("El Carrito de la Orden es Obligatorio")
 		.isArray({ min: 1 }),
 	handleInputErrors,
-	authorizeAdmin,
+	authenticate,
 	OrderController.sendOrderEmails
 );
 
