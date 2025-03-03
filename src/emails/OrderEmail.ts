@@ -88,11 +88,13 @@ export class OrderEmail {
         // Estimate delivery date (7 days from now)
         const deliveryDate = new Date();
         deliveryDate.setDate(deliveryDate.getDate() + 7);
+        /*
         const formattedDeliveryDate = deliveryDate.toLocaleDateString('es-CL', {
             year: 'numeric', 
             month: 'long', 
             day: 'numeric'
         });
+        */
 
         // Generate HTML for the email
         const emailHTML = `
