@@ -4,5 +4,5 @@ import server from './server'
 const port = process.env.PORT || 4000
 
 server.listen(port, () => {
-    console.log( colors.magenta.bold(`REST API working in: http://localhost:${port}`))
+    console.log( colors.magenta.bold(`REST API working in port: ${port}`))
 })

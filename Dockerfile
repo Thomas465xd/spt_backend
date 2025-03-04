@@ -15,8 +15,5 @@ COPY . .
 # Compilar TypeScript
 RUN npm run build
 
-# Exponer el puerto en el que corre Express
-EXPOSE 4000
-
 # Comando de inicio
 CMD ["node", "dist/index.js"]
