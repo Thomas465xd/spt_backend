@@ -53,15 +53,28 @@ export class AdminController {
             const page = parseInt(req.query.page as string) || 1;
             const perPage = parseInt(req.query.perPage as string) || 10;
 
+            // Search Filters
+            const searchRUT = req.query.searchRUT as string || ""; // Obtener el término de búsqueda
+            const searchEmail = req.query.searchEmail as string || "";
+
             // Calculate skip and limit for pagination
             const skip = (page - 1) * perPage;
             const limit = perPage;
 
+            // Build query filter
+            const query: any = { confirmed: true };
+
+            if (searchRUT || searchEmail) {
+                query.$or = [];
+                if (searchRUT) query.$or.push({ rut: new RegExp(searchRUT, "i") }); // Case-insensitive search
+                if (searchEmail) query.$or.push({ email: new RegExp(searchEmail, "i") });
+            }
+
             // Get the total number of confirmed users
-            const totalUsers = await User.countDocuments({ confirmed: true });
+            const totalUsers = await User.countDocuments(query);
 
             // Fetch the users for the current page with pagination
-            const users = await User.find({ confirmed: true })
+            const users = await User.find(query)
                 .skip(skip)
                 .limit(limit)
                 .sort({ createdAt: -1 }); // Sort by createdAt in descending order
@@ -81,15 +94,28 @@ export class AdminController {
             const page = parseInt(req.query.page as string) || 1;
             const perPage = parseInt(req.query.perPage as string) || 10;
 
+            // Search Filters
+            const searchRUT = req.query.searchRUT as string || ""; // Obtener el término de búsqueda
+            const searchEmail = req.query.searchEmail as string || "";
+
             // Calculate skip and limit for pagination
             const skip = (page - 1) * perPage;
             const limit = perPage;
 
+            // Build query filter
+            const query: any = { confirmed: false };
+
+            if (searchRUT || searchEmail) {
+                query.$or = [];
+                if (searchRUT) query.$or.push({ rut: new RegExp(searchRUT, "i") }); // Case-insensitive search
+                if (searchEmail) query.$or.push({ email: new RegExp(searchEmail, "i") });
+            }
+
             // Get the total number of unconfirmed users
-            const totalUsers = await User.countDocuments({ confirmed: false });
+            const totalUsers = await User.countDocuments(query);
 
             // Fetch the users for the current page with pagination
-            const users = await User.find({ confirmed: false }) 
+            const users = await User.find(query) 
                 .skip(skip)
                 .limit(limit)
                 .sort({ passwordSet: 1, createdAt: -1 }); // Sort by createdAt in descending order
@@ -97,7 +123,7 @@ export class AdminController {
             // Calculate the total number of pages
             const totalPages = Math.ceil(totalUsers / perPage);
 
-            res.status(200).json({users, totalUsers, totalPages});
+            res.status(200).json({users, totalUsers, totalPages, searchRUT, searchEmail});
         } catch (error) {
             res.status(500).json({ message: "Internal Server Error" })
         }

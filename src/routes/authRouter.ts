@@ -150,9 +150,6 @@ router.patch("/profile/update-shipping-info",
         "Valparaíso", "Metropolitana de Santiago", "O'Higgins", "Maule", "Ñuble",
         "Biobío", "La Araucanía", "Los Ríos", "Los Lagos", "Aysén", "Magallanes"
     ]).withMessage("Región inválida."),
-    body("postalCode").optional()
-        .matches(/^\d{7}$/)
-        .withMessage("El Código Postal debe tener exactamente 7 dígitos numéricos."),
     handleInputErrors,
     authenticate,
     ProfileController.updateExtraInfo

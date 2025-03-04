@@ -127,7 +127,8 @@ const userSchema : Schema = new Schema({
     postalCode: {
         type: String,
         required: false,
-        trim: true
+        trim: true, 
+        length: 7
     },
     country: {
         type: String,

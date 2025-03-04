@@ -73,6 +73,8 @@ export class OrderEmail {
         
         // Calculate subtotal (total before shipping)
         const subtotal = total - shippingCost;
+        const iva = subtotal * 0.19;
+        const totalWithTax = subtotal + iva;
 
         // Get date in Spanish format
         const now = new Date();
@@ -416,7 +418,7 @@ export class OrderEmail {
                         </div>
                         <div class="summary-row">
                             <span class="summary-label">Total:</span>
-                            <span class="summary-value" style="font-size: 18px; font-weight: bold;">${formatCurrency(total)}</span>
+                            <span class="summary-value" style="font-size: 18px; font-weight: bold;">${formatCurrency(totalWithTax)}</span>
                         </div>
                     </div>
                     
@@ -485,12 +487,16 @@ export class OrderEmail {
                                 <td>${formatCurrency(subtotal)}</td>
                             </tr>
                             <tr>
+                                <td>IVA:</td>
+                                <td>${formatCurrency(iva)}</td>
+                            </tr>
+                            <tr>
                                 <td>Envío:</td>
                                 <td>${formatCurrency(shippingCost)}</td>
                             </tr>
                             <tr>
                                 <td>Total:</td>
-                                <td>${formatCurrency(total)}</td>
+                                <td>${formatCurrency(totalWithTax)}</td>
                             </tr>
                         </table>
                     </div>
@@ -554,6 +560,8 @@ export class OrderEmail {
         
         // Calculate subtotal (total before shipping)
         const subtotal = total - shippingCost;
+        const iva = subtotal * 0.19;
+        const totalWithTax = subtotal + iva;
 
         // Get date in Spanish format
         const now = new Date();
@@ -836,12 +844,16 @@ export class OrderEmail {
                                 <td>${formatCurrency(subtotal)}</td>
                             </tr>
                             <tr>
+                                <td>IVA:</td>
+                                <td>${formatCurrency(iva)}</td>
+                            </tr>
+                            <tr>
                                 <td>Envío:</td>
                                 <td>${formatCurrency(shippingCost)}</td>
                             </tr>
                             <tr>
                                 <td>Total:</td>
-                                <td>${formatCurrency(total)}</td>
+                                <td>${formatCurrency(totalWithTax)}</td>
                             </tr>
                         </table>
                     </div>
