@@ -1,4 +1,4 @@
-import { transporter } from "../config/nodemailer";
+import resend from "../config/resend";
 
 interface CartDetail {
     id: number;
@@ -528,8 +528,8 @@ export class OrderEmail {
         `;
 
         // Send the email
-        await transporter.sendMail({
-            from: `"Tu Empresa - Confirmación de Pedido" <noreply@tuempresa.com>`,
+        await resend.emails.send({
+            from: `"Tu Empresa - Confirmación de Pedido" <${process.env.NOREPLY_EMAIL}>`,
             to: clientEmail,
             subject: `🎉 ¡Pedido #${token} Confirmado!`,
             html: emailHTML,
@@ -876,7 +876,7 @@ export class OrderEmail {
         // Send the email
         const adminEmail = process.env.ADMIN_EMAIL;
 
-        await transporter.sendMail({
+        await resend.emails.send({
             from: `"SPT - Nuevo Pedido" <noreply@spt.com>`,
             to: adminEmail,
             subject: "🔔 Nueva Orden Solicitada",

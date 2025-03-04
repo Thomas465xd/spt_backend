@@ -29,6 +29,12 @@ export class AuthController {
                 token: token.token
             });
 
+            ConfirmEmail.sendAcknowledgementEmail({
+                email: user.email,
+                name: user.name, 
+                token: token.token
+            })
+
             // Save the user in the DB
             await Promise.allSettled([user.save(), token.save()]);
 

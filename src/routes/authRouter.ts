@@ -30,8 +30,7 @@ router.post("/create-account",
         .withMessage("Formato de teléfono inválido. Example: +56912345678 or 912345678"),
     body("email")
         .notEmpty().withMessage("El Email es obligatorio")
-        .isEmail().withMessage("El Email no es válido")
-        .normalizeEmail(),
+        .isEmail().withMessage("El Email no es válido"), 
     body("address")
         .notEmpty().withMessage("La Dirección es obligatoria"),
     handleInputErrors,
@@ -78,8 +77,7 @@ router.post("/login",
         .withMessage("Formato de RUT inválido. Ejemplo: 12.345.678-9"),
     body("email")
         .notEmpty().withMessage("El Email es obligatorio")
-        .isEmail().withMessage("El Email no es válido")
-        .normalizeEmail(),
+        .isEmail().withMessage("El Email no es válido"),
     body("password")
         .notEmpty().withMessage("La contraseña no puede estar vacia"),
     handleInputErrors,
@@ -91,8 +89,7 @@ router.post("/login",
 router.post("/forgot-password", 
     body("email")
         .notEmpty().withMessage("El Email es Obligatorio")
-        .isEmail().withMessage("El Email no es Valido")
-        .normalizeEmail(),
+        .isEmail().withMessage("El Email no es Valido"),
     handleInputErrors,
     AuthController.forgotPassword
 )
@@ -130,8 +127,7 @@ router.patch("/profile/update",
         .notEmpty().withMessage("El Nombre de la Empresa es Obligatorio"),
     body("email")
         .notEmpty().withMessage("El Email es Obligatorio")
-        .isEmail().withMessage("El Email no es Valido")
-        .normalizeEmail(),
+        .isEmail().withMessage("El Email no es Valido"),
     body("phone")
         .matches(/^(\+56\s?9\d{8}|9\d{8})$/)
         .trim()
