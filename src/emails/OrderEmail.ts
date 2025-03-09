@@ -46,6 +46,7 @@ interface OrderEmailInterface {
     shippingCost: number;
     total: number;
     cartDetails: CartDetail[];
+    totalDiscount?: number;
 }
 
 export class OrderEmail {
@@ -54,7 +55,6 @@ export class OrderEmail {
             token,
             clientName,
             clientEmail,
-            clientPhone,
             clientCountry,
             clientState,
             clientCityZone,
@@ -63,18 +63,25 @@ export class OrderEmail {
             clientBuildingNumber,
             shippingCost,
             total,
-            cartDetails
+            cartDetails,
+            totalDiscount = 0
         } = order;
 
         // Format currency
         const formatCurrency = (value: number) : string => {
-            return `$ ${value.toLocaleString("es-CL")}`;
+            return `$ ${Math.round(value).toLocaleString("es-CL")}`;
         }
         
         // Calculate subtotal (total before shipping)
         const subtotal = total - shippingCost;
-        const iva = subtotal * 0.19;
+        const subtotalWithoutDiscount = (subtotal * 100) / 80;
+        const iva = subtotalWithoutDiscount * 0.19;
         const totalWithTax = subtotal + iva;
+
+        // Check if any product has a discount
+        const hasAnyDiscount = cartDetails.some(item => 
+            (item.discount > 0 || item.cd_discount > 0)
+        );
 
         // Get date in Spanish format
         const now = new Date();
@@ -386,6 +393,33 @@ export class OrderEmail {
                     color: white;
                     text-decoration: none;
                 }
+                .discount-badge {
+                    display: inline-block;
+                    background-color: #4CAF50;
+                    color: white;
+                    padding: 2px 6px;
+                    border-radius: 3px;
+                    font-size: 12px;
+                    margin-left: 5px;
+                    font-weight: bold;
+                }
+                .price-with-discount {
+                    display: flex;
+                    flex-direction: column;
+                }
+                .original-price {
+                    text-decoration: line-through;
+                    color: #999;
+                    font-size: 13px;
+                }
+                .discounted-price {
+                    color: #e63946;
+                    font-weight: bold;
+                }
+                .green-text {
+                    color: #4CAF50;
+                    font-weight: bold;
+                }
             </style>
         </head>
         <body>
@@ -459,24 +493,47 @@ export class OrderEmail {
                                 <th style="width: 70px;">Imagen</th>
                                 <th>Producto</th>
                                 <th>Precio</th>
+                                ${hasAnyDiscount ? '<th>Descuento</th>' : ''}
                                 <th>Cantidad</th>
                                 <th>Total</th>
                             </tr>
                         </thead>
                         <tbody>
-                            ${cartDetails.map(item => `
+                            ${cartDetails.map(item => {
+                                const discountValue = item.discount || item.cd_discount || 0;
+                                const hasDiscount = discountValue > 0;
+                                const unitValue = item.unitValue || item.cd_unit_value || 0;
+                                const discountedPrice = unitValue * (1 - discountValue / 100);
+                                
+                                return `
                                 <tr>
-                                    <td><img src="${item.image}" alt="${item.itemName}" class="product-image"></td>
+                                    <td><img src="${item.image || item.cd_image}" alt="${item.itemName}" class="product-image"></td>
                                     <td>
-                                        <div class="product-name">${item.itemName}</div>
+                                        <div class="product-name">
+                                            ${item.itemName || item.cd_item_name}
+                                            ${hasDiscount ? `<span class="discount-badge">${discountValue}% OFF</span>` : ''}
+                                        </div>
                                         ${item.description ? `<div class="product-details">${item.description}</div>` : ''}
                                         ${item.notice ? `<div class="notice">${item.notice}</div>` : ''}
+                                        <div class="product-details">SKU: ${item.sku || item.codigo_variante_producto || 'N/A'}</div>
                                     </td>
-                                    <td>${formatCurrency(item.unitValue)}</td>
-                                    <td>${item.quantity}</td>
-                                    <td>${formatCurrency(item.total)}</td>
+                                    <td>
+                                        ${hasDiscount ? `
+                                            <div class="price-with-discount">
+                                                <span class="original-price">${formatCurrency(unitValue)}</span>
+                                                <span class="discounted-price">${formatCurrency(discountedPrice)}</span>
+                                            </div>
+                                        ` : formatCurrency(unitValue)}
+                                    </td>
+                                    ${hasAnyDiscount ? `
+                                        <td class="green-text">
+                                            ${hasDiscount ? `-${formatCurrency(unitValue * discountValue / 100)}` : '-'}
+                                        </td>
+                                    ` : ''}
+                                    <td>${item.quantity || item.cd_q}</td>
+                                    <td>${formatCurrency(item.total || item.cd_sub_total)}</td>
                                 </tr>
-                            `).join('')}
+                            `}).join('')}
                         </tbody>
                     </table>
                     
@@ -486,6 +543,12 @@ export class OrderEmail {
                                 <td>Subtotal:</td>
                                 <td>${formatCurrency(subtotal)}</td>
                             </tr>
+                            ${totalDiscount > 0 ? `
+                            <tr>
+                                <td>Descuento:</td>
+                                <td class="green-text">-${formatCurrency(totalDiscount)}</td>
+                            </tr>
+                            ` : ''}
                             <tr>
                                 <td>IVA:</td>
                                 <td>${formatCurrency(iva)}</td>
@@ -529,7 +592,7 @@ export class OrderEmail {
 
         // Send the email
         await resend.emails.send({
-            from: `"Tu Empresa - Confirmación de Pedido" <${process.env.NOREPLY_EMAIL}>`,
+            from: `"Portal SPT - Confirmación de Pedido" <${process.env.NOREPLY_EMAIL}>`,
             to: clientEmail,
             subject: `🎉 ¡Pedido #${token} Confirmado!`,
             html: emailHTML,
@@ -550,9 +613,10 @@ export class OrderEmail {
             clientBuildingNumber,
             shippingCost,
             total,
-            cartDetails
+            cartDetails,
+            totalDiscount = 0 // Added discount parameter
         } = order;
-
+    
         // Format currency
         const formatCurrency = (value: number) : string => {
             return `$ ${value.toLocaleString("es-CL")}`;
@@ -560,9 +624,16 @@ export class OrderEmail {
         
         // Calculate subtotal (total before shipping)
         const subtotal = total - shippingCost;
-        const iva = subtotal * 0.19;
-        const totalWithTax = subtotal + iva;
-
+        const subtotalWithoutDiscount = (subtotal * 100) / 80;
+        const iva = subtotalWithoutDiscount * 0.19;
+        
+        // Calculate discount amount if discount percentage is provided
+        const discountPercentage = totalDiscount || 0;
+        const discountAmount = subtotal * (discountPercentage / 100);
+        
+        // Calculate total with tax and discount
+        const totalWithTaxAndDiscount = subtotal + iva - discountAmount;
+    
         // Get date in Spanish format
         const now = new Date();
         const options: Intl.DateTimeFormatOptions = { 
@@ -573,7 +644,7 @@ export class OrderEmail {
             minute: '2-digit'
         };
         const formattedDate = now.toLocaleDateString('es-CL', options);
-
+    
         // Generate HTML for the email
         const emailHTML = `
         <!DOCTYPE html>
@@ -733,6 +804,10 @@ export class OrderEmail {
                     font-weight: bold;
                     font-size: 16px;
                 }
+                .discount-row {
+                    color: #d9534f;
+                    font-weight: 600;
+                }
                 .notice {
                     background-color: #fffaf0;
                     border-left: 4px solid #ffa500;
@@ -847,13 +922,19 @@ export class OrderEmail {
                                 <td>IVA:</td>
                                 <td>${formatCurrency(iva)}</td>
                             </tr>
+                            ${totalDiscount > 0 ? `
+                            <tr class="discount-row">
+                                <td>Descuento (${discountPercentage}%):</td>
+                                <td>-${formatCurrency(discountAmount)}</td>
+                            </tr>
+                            ` : ''}
                             <tr>
                                 <td>Envío:</td>
                                 <td>${formatCurrency(shippingCost)}</td>
                             </tr>
                             <tr>
                                 <td>Total:</td>
-                                <td>${formatCurrency(totalWithTax)}</td>
+                                <td>${formatCurrency(totalWithTaxAndDiscount)}</td>
                             </tr>
                         </table>
                     </div>
@@ -872,10 +953,10 @@ export class OrderEmail {
         </body>
         </html>
         `;
-
+    
         // Send the email
         const adminEmail = process.env.ADMIN_EMAIL;
-
+    
         await resend.emails.send({
             from: `"SPT - Nuevo Pedido" <noreply@spt.com>`,
             to: adminEmail,

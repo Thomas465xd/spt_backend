@@ -21,8 +21,7 @@ router.post(
 	body("clientEmail")
 		.notEmpty()
 		.withMessage("El Email del Cliente es Obligatorio")
-		.isEmail()
-		.normalizeEmail(),
+		.isEmail(),
 	body("clientPhone")
 		.notEmpty()
 		.withMessage("El Telefono del Cliente es Obligatorio"),

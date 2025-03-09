@@ -20,7 +20,7 @@ export class OrderController {
             }
             
             // Enviar ambos correos en paralelo
-            await Promise.all([
+            await Promise.allSettled([
                 OrderEmail.sendOrderEmailToClient({
                     token,
                     clientName,
