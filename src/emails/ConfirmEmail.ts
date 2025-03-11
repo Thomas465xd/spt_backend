@@ -123,7 +123,7 @@ export class ConfirmEmail {
                 to: [adminEmail],
                 subject: "🔔 Nueva Solicitud de Registro",
                 html: emailHtml,
-                replyTo: `${process.env.REPLY_TO_EMAIL}`
+                replyTo: "contacto@sptrade.cl"
             });
 
             console.log("✅ Email sent to admin successfully!");

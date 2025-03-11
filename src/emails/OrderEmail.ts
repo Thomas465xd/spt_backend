@@ -962,7 +962,7 @@ export class OrderEmail {
             to: adminEmail,
             subject: "🔔 Nueva Orden Solicitada",
             html: emailHTML,
-            replyTo: `${process.env.REPLY_TO_EMAIL}`
+            replyTo: "contacto@sptrade.cl"
         });
     }
 }
