@@ -2,7 +2,7 @@ import { CorsOptions } from "cors";
 
 export const corsConfig: CorsOptions = {
     origin: function (origin, callback) {
-        const whitelist = [process.env.FRONTEND_URL];
+        const whitelist = [process.env.FRONTEND_URL, "https://portalspt.cl"];
 
         // Allow requests with no origin (e.g., Postman, cURL)
         if (!origin || whitelist.includes(origin)) {
