@@ -148,7 +148,8 @@ export const userExists = async (req: Request, res: Response, next: NextFunction
             return
         }
 
-        req.body.user = user;
+        // Agregando el usuario a la petición
+        req.user = user;
         next();
     } catch (error) {
         res.status(500).json({ message: "Error Interno del Servidor"})

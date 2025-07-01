@@ -29,6 +29,9 @@ export interface UserInterface extends Document {
     phone: string
     password: string
 
+    // User Unique Attributes
+    discount: number // Number between 0 and 100
+
     // User Status
     confirmed: boolean
     passwordSet: boolean
@@ -95,6 +98,15 @@ const userSchema : Schema = new Schema({
     admin: {
         type: Boolean,
         default: false
+    },
+
+    // User Unique Attributes
+    discount: {
+        type: Number, 
+        required: true, 
+        default: 20, 
+        min: 0, 
+        max: 100
     },
 
     // Address

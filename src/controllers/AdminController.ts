@@ -154,6 +154,37 @@ export class AdminController {
         }
     };
 
+    //TODO: Implementar la funcionalidad de obtener usuario por RUT
+    static getUserByRut = async (req: Request, res: Response) => {
+        try {
+            const { rut } = req.params;
+            //console.log("Received RUT:", rut);
+
+            if (!rut) {
+                const error = new Error("El RUT es requerido.");
+                res.status(400).json({ message: error.message });
+                return
+            }
+
+            const user = await User.findOne({ rut });
+            //console.log("User found:", user);
+
+            if (!user) {
+                const error = new Error("Usuario no encontrado.");
+                res.status(404).json({ message: error.message });
+                return
+            }
+
+            res.status(200).json({ user });
+            return 
+
+        } catch (error) {
+            console.error("Error en getUserByRut:", error);
+            res.status(500).json({ message: "Error interno del servidor" });
+            return
+        }
+    };
+
     static getAuthenticatedUser = async (req: Request, res: Response) => {
         try {
             const user = req.user;
@@ -165,9 +196,27 @@ export class AdminController {
         }
     }
 
+    //TODO: Implementar la funcionalidad de asignar descuento al usuario
+    static updateUserDiscount = async (req: Request, res: Response) => {
+        try {
+            const user = req.user;
+            //console.log(user)
+
+            user.discount = req.body.discount
+            await user.save(); 
+
+            res.status(200).json({ message: "Descuento Asignado Exitosamente"});
+            return
+            
+        } catch (error) {
+            res.status(500).json({ message: "Error interno del servidor" });
+            return
+        }
+    }
+
     static updateUserStatus = async (req: Request, res: Response) => {
         try {
-            const user = req.body.user;
+            const user = req.user;
             //console.log(user)
 
             if(user.confirmed) {
@@ -187,7 +236,7 @@ export class AdminController {
 
     static deleteUser = async (req: Request, res: Response) => {
         try {
-            const user = req.body.user as UserInterface; 
+            const user = req.user; 
 
             if(user.passwordSet) {
                 const error = new Error("No se puede eliminar un usuario con una contraseña establecida, puedes bloquearlo o desbloquearlo.");
