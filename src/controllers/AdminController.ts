@@ -5,7 +5,7 @@ import { generatePasswordResetToken } from "../utils/jwt";
 import { ConfirmEmail } from "../emails/ConfirmEmail";
 
 export class AdminController {
-    
+    // Confirm a user by it's token and generate a new token for creating a password 
     static confirmUser = async (req: Request, res: Response) => {
         try {
             // Validate received token
@@ -129,11 +129,12 @@ export class AdminController {
         }
     }
 
+    // Get a user by it's mongoDB ID
     static getUserById = async (req: Request, res: Response) => {
         try {
-            const { id } = req.params;
-    
-            const user = await User.findById(id);
+            const { id } = req.params; 
+
+            const user = req.user
 
             if(!user.confirmed) {
                 const { token } = await Token.findOne({ userId: id, type: "admin_confirmation" });
@@ -154,7 +155,7 @@ export class AdminController {
         }
     };
 
-    //TODO: Implementar la funcionalidad de obtener usuario por RUT
+    //Get user by it's RUT | Format: XX.XXX.XXX-X
     static getUserByRut = async (req: Request, res: Response) => {
         try {
             const { rut } = req.params;
@@ -166,16 +167,22 @@ export class AdminController {
                 return
             }
 
-            const user = await User.findOne({ rut });
+            const user = await User.findOne({
+                $or: [
+                    { businessRut: rut },
+                    { rut },
+                ]
+            });
+
             //console.log("User found:", user);
 
-            if (!user) {
+            if (!user){
                 const error = new Error("Usuario no encontrado.");
                 res.status(404).json({ message: error.message });
                 return
             }
 
-            res.status(200).json({ user });
+            res.status(200).json( user );
             return 
 
         } catch (error) {
@@ -185,6 +192,7 @@ export class AdminController {
         }
     };
 
+    // Get the current authenticated user
     static getAuthenticatedUser = async (req: Request, res: Response) => {
         try {
             const user = req.user;
@@ -196,7 +204,7 @@ export class AdminController {
         }
     }
 
-    //TODO: Implementar la funcionalidad de asignar descuento al usuario
+    // Assign a discount to a user | discount is a number between 0 and 100
     static updateUserDiscount = async (req: Request, res: Response) => {
         try {
             const user = req.user;

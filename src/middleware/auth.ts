@@ -46,7 +46,7 @@ export const authenticate = async (req: Request, res: Response, next: NextFuncti
 
         // Buscar el usuario por el ID
         const user = await User.findById(decoded.id).select(
-            "_id name businessName rut businessRut email phone address admin region city province reference postalCode country"
+            "_id name businessName rut businessRut email phone address admin region city province reference postalCode country discount"
         );
 
         if(!user) {

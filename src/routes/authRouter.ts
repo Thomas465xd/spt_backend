@@ -173,6 +173,13 @@ router.patch("/profile/update-password",
     ProfileController.updatePassword
 )
 
+/** Get authenticated user */
+router.get("/user",
+    authenticate,
+    handleInputErrors,
+    AdminController.getAuthenticatedUser
+)
+
 //! Admin Auth Routes
 
 /* Get Confirmed Users */
@@ -214,18 +221,13 @@ router.get("/admin/user/rut/:rut",
     AdminController.getUserByRut
 )
 
-/** Get authenticated user */
-router.get("/user",
-    authenticate,
-    handleInputErrors,
-    AdminController.getAuthenticatedUser
-)
 
 /* Confirm Account */
 router.post("/admin/confirm/:token",
     param("token")
-    .notEmpty().withMessage("El Token de Ingreso es Obligatorio"),
+        .notEmpty().withMessage("El Token de Ingreso es Obligatorio"),
     handleInputErrors,
+    authorizeAdmin, 
     validateToken("admin_confirmation"),
     checkUserStatus,
     AdminController.confirmUser
