@@ -173,17 +173,14 @@ router.patch("/profile/update-password",
     ProfileController.updatePassword
 )
 
-//! Admin Auth Routes
-
-/* Confirm Account */
-router.post("/admin/confirm/:token",
-    param("token")
-        .notEmpty().withMessage("El Token de Ingreso es Obligatorio"),
+/** Get authenticated user */
+router.get("/user",
+    authenticate,
     handleInputErrors,
-    validateToken("admin_confirmation"),
-    checkUserStatus,
-    AdminController.confirmUser
+    AdminController.getAuthenticatedUser
 )
+
+//! Admin Auth Routes
 
 /* Get Confirmed Users */
 router.get("/admin/users", 
@@ -201,9 +198,8 @@ router.get("/admin/unconfirmed-users",
     AdminController.getUnconfirmedUsers
 )
 
-
-/* Delete User */
-router.delete("/admin/delete-user/:id",
+/** Get user by id */
+router.get("/admin/user/:id",
     param("id")
         .notEmpty().withMessage("El ID del Usuario es Obligatorio")
         .isMongoId().withMessage("El ID del Usuario no es Valido"),
@@ -211,7 +207,46 @@ router.delete("/admin/delete-user/:id",
     authorizeAdmin,
     handleInputErrors,
     userExists,
-    AdminController.deleteUser
+    AdminController.getUserById
+)
+
+/** Get user by RUT */
+router.get("/admin/user/rut/:rut",
+    param("rut")
+        .notEmpty().withMessage("El RUT es obligatorio")
+        .matches(/^\d{1,2}\.\d{3}\.\d{3}-[\dkK]$/).withMessage("Formato de RUT inválido"),
+    authenticate,
+    authorizeAdmin,
+    handleInputErrors,
+    AdminController.getUserByRut
+)
+
+
+/* Confirm Account */
+router.post("/admin/confirm/:token",
+    param("token")
+        .notEmpty().withMessage("El Token de Ingreso es Obligatorio"),
+    handleInputErrors,
+    authorizeAdmin, 
+    validateToken("admin_confirmation"),
+    checkUserStatus,
+    AdminController.confirmUser
+)
+
+/* Assign user Discount */
+router.patch("/admin/user/:id/discount", 
+    param("id")
+        .notEmpty().withMessage("El ID del Usuario es Obligatorio")
+        .isMongoId().withMessage("El ID del Usuario no es Valido"),
+    body("discount")
+        .notEmpty().withMessage("El Descuento es Obligatorio")
+        .isNumeric().withMessage("El Descuento debe ser un número")
+        .isInt({ min: 0, max: 100 }).withMessage("El Descuento debe estar entre 0 y 100"),
+    authenticate, 
+    authorizeAdmin, 
+    handleInputErrors, 
+    userExists, 
+    AdminController.updateUserDiscount
 )
 
 /* Block User */
@@ -226,22 +261,16 @@ router.patch("/admin/update-status/:id",
     AdminController.updateUserStatus
 )
 
-/** Get user by id */
-router.get("/admin/user/:id",
+/* Delete User */
+router.delete("/admin/delete-user/:id",
     param("id")
         .notEmpty().withMessage("El ID del Usuario es Obligatorio")
         .isMongoId().withMessage("El ID del Usuario no es Valido"),
     authenticate,
+    authorizeAdmin,
     handleInputErrors,
     userExists,
-    AdminController.getUserById
-)
-
-/** Get authenticated user */
-router.get("/user",
-    authenticate,
-    handleInputErrors,
-    AdminController.getAuthenticatedUser
+    AdminController.deleteUser
 )
 
 export default router

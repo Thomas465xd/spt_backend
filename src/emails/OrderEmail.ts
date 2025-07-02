@@ -958,7 +958,7 @@ export class OrderEmail {
         const adminEmail = process.env.ADMIN_EMAIL;
     
         await resend.emails.send({
-            from: `"SPT - Nuevo Pedido" <noreply@spt.com>`,
+            from: `"SPT - Nuevo Pedido" <noreply@portalspt.cl>`,
             to: adminEmail,
             subject: "🔔 Nueva Orden Solicitada",
             html: emailHTML,
