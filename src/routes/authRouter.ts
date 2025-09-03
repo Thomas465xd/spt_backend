@@ -227,6 +227,7 @@ router.post("/admin/confirm/:token",
     param("token")
         .notEmpty().withMessage("El Token de Ingreso es Obligatorio"),
     handleInputErrors,
+    authenticate,
     authorizeAdmin, 
     validateToken("admin_confirmation"),
     checkUserStatus,
