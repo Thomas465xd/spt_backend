@@ -27,7 +27,7 @@ export const errorHandler: ErrorRequestHandler = (
         } 
     */
 
-    // if the error has now specific type, then just throw a generic error
+    // if the error has no specific type, then just throw a generic error
     res.status(500).json({ errors: [{
         message: "Internal Server Error"
     }] });
