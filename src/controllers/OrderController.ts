@@ -1,6 +1,10 @@
 import type { Request, Response } from "express";
 import User from "../models/User";
 import { OrderEmail } from "../emails/OrderEmail";
+import { ForbiddenError } from "../errors/forbidden-error";
+import { InternalServerError } from "../errors/server-error";
+import Order from "../models/Order";
+import { NotFoundError } from "../errors/not-found";
 
 interface OrderData {
     token: string;
@@ -19,6 +23,235 @@ interface OrderData {
 }
 
 export class OrderController {
+    //* Get all Registered Orders | ADMIN
+    static getOrdersAdmin = async (req: Request, res: Response) => {
+        // Get the page and perPage query parameters (default values if not provided)
+        const page = parseInt(req.query.page as string) || 1;
+        const perPage = parseInt(req.query.perPage as string) || 10;
+
+        // Search Filters
+        const filters: any = {};
+
+        //* ?status="cancelled"
+        if (req.query.status) {
+            const statusMap: Record<string, string> = {
+                'pendiente': 'Pendiente',
+                'en transito': 'En Transito',
+                'entregado': 'Entregado',
+                'cancelado': 'Cancelado'
+            };
+            
+            const normalizedStatus = statusMap[String(req.query.status).toLowerCase()];
+            if (normalizedStatus) {
+                filters.status = normalizedStatus;
+            }
+        }
+
+        //* ?country=chile
+        if (req.query.country) {
+            filters.country = { $regex: new RegExp(`^${req.query.country}$`, "i") }
+        }
+
+        //TODO: Add user filtering by businessRut
+
+        // Calculate skip and limit for pagination
+        const skip = (page - 1) * perPage;
+        const limit = perPage;
+
+        // Get the total number of unconfirmed orders
+        const totalOrders = await Order.countDocuments();
+
+        // Fetch the orders for the current page with pagination
+        const orders = await Order.find(filters) 
+            .skip(skip)
+            .limit(limit)
+            .sort({ createdAt: -1 }); // Sort by createdAt in descending order
+
+        // Calculate the total number of pages
+        const totalPages = Math.ceil(totalOrders / perPage);
+
+        res.status(200).json({ 
+            orders, 
+            totalOrders,
+            totalPages, 
+            perPage, 
+            currentPage: page 
+        });
+    }
+
+    //* Get ANY Specific Order by it's ID | ADMIN
+    static getOrderByIdAdmin = async (req: Request, res: Response) => {
+        const { orderId } = req.params; 
+
+        const order = await Order.findById(orderId); 
+        if(!order) {
+            throw new NotFoundError("Orden no Encontrada")
+        }
+
+        res.status(200).json(order)
+    }
+
+    //TODO Get all Registered Orders under the same businessRut attached to the user
+    static getOrdersUser = async (req: Request, res: Response) => {
+        // Get the current user
+        const user = req.user; 
+
+        // Get the page and perPage query parameters (default values if not provided)
+        const page = parseInt(req.query.page as string) || 1;
+        const perPage = parseInt(req.query.perPage as string) || 10;
+
+        // Search Filters
+        const filters: any = {};
+
+        //* ?status="cancelled"
+        if (req.query.status) {
+            const statusMap: Record<string, string> = {
+                'pendiente': 'Pendiente',
+                'en transito': 'En Transito',
+                'entregado': 'Entregado',
+                'cancelado': 'Cancelado'
+            };
+            
+            const normalizedStatus = statusMap[String(req.query.status).toLowerCase()];
+            if (normalizedStatus) {
+                filters.status = normalizedStatus;
+            }
+        }
+
+        //* ?country=chile
+        if (req.query.country) {
+            filters.country = { $regex: new RegExp(`^${req.query.country}$`, "i") }
+        }
+
+        //TODO: Add user filtering by businessRut
+
+        // Calculate skip and limit for pagination
+        const skip = (page - 1) * perPage;
+        const limit = perPage;
+
+        // Get the total number of unconfirmed orders
+        const totalOrders = await Order.countDocuments();
+
+        // Fetch the orders for the current page with pagination
+        const orders = await Order.find(filters) 
+            .skip(skip)
+            .limit(limit)
+            .sort({ createdAt: -1 }); // Sort by createdAt in descending order
+
+        // Calculate the total number of pages
+        const totalPages = Math.ceil(totalOrders / perPage);
+
+        res.status(200).json({ 
+            orders, 
+            totalOrders,
+            totalPages, 
+            perPage, 
+            currentPage: page 
+        });
+    }
+
+    //TODO Get a single order registered under the businessRut attached to the current logged user
+    static getOrderByIdUser = async (req: Request, res: Response) => {
+        const { orderId } = req.params; 
+
+        const order = await Order.findById(orderId); 
+        if(!order) {
+            throw new NotFoundError("Orden no Encontrada")
+        }
+
+        res.status(200).json(order)
+    }
+
+    //^ CREATE ORDER
+    static createOrder = async (req: Request, res: Response) => {
+        const { items, payment, shipper, country, userId, businessName, businessRut, total } = req.body; 
+
+        // Create the Order
+        const order = await Order.build({
+            items, 
+            payment, 
+            shipper, 
+            country, 
+            userId,
+            businessName, 
+            businessRut,
+            total
+        })
+        
+        await order.save();
+
+        //TODO: Send Email to the User with registrated order
+
+        res.status(201).json({ 
+            message: "Orden registrada Exitosamente", 
+            order 
+        })
+    }
+
+    //~ UPDATE ORDER | Supports Partial Updates
+    static updateOrder = async (req: Request, res: Response) => {
+        const { orderId } = req.params; 
+    
+        const order = await Order.findById(orderId); 
+        if(!order) {
+            throw new NotFoundError("Orden no Encontrada")
+        }
+
+        // Only update fields that are provided | EXCEPT STATUS
+        const allowedUpdates = ['items', 'payment', 'shipper', 'country', 'userId', 'businessRut', 'businessName', 'total'];
+        const updates = Object.keys(req.body)
+            .filter(key => allowedUpdates.includes(key))
+            .reduce((obj, key) => {
+                obj[key] = req.body[key];
+                return obj;
+            }, {} as any);
+
+        order.set(updates);
+        await order.save(); 
+
+        res.status(200).json({ 
+            message: "Orden Actualizada Exitosamente", 
+            order
+        })
+    }
+
+    //~ UPDATE ORDER STATUS
+    static updateOrderStatus = async (req: Request, res: Response) => {
+        const { orderId } = req.params; 
+        const { status } = req.body; // Validated in the router
+    
+        const order = await Order.findById(orderId); 
+        if(!order) {
+            throw new NotFoundError("Orden no Encontrada")
+        }
+
+        // Set order Status
+        order.set({ status })
+
+        //TODO: EMAIL SENDING LOGIC DEPENDING ON THE STATUSES
+
+        await order.save(); 
+
+        res.status(200).json({ 
+            message: "Estado de la Orden Actualizado Exitosamente", 
+            order
+        })
+    }
+
+    //! DELETE ORDER
+    static deleteOrder = async (req: Request, res: Response) => {
+        const { orderId } = req.params; 
+
+        const order = await Order.findById(orderId); 
+        if(!order) {
+            throw new NotFoundError("Orden no Encontrada")
+        }
+
+        await order.deleteOne(); 
+
+        res.status(200).json({ message: "Orden Eliminada Correctamente" })
+    }
+
     static sendOrderEmails = async (req: Request, res: Response) => {
         try {
             const orderData: OrderData = req.body;
@@ -30,10 +263,7 @@ export class OrderController {
             const orderUser = await User.findOne({ email: clientEmail });
             
             if (!orderUser || orderUser.email !== authUser.email) {
-                res.status(403).json({ 
-                    message: "No tienes permiso para generar órdenes con este email." 
-                });
-                return;
+                throw new ForbiddenError("No tienes permiso para generar órdenes con este email.");
             }
             
             // Enviar ambos correos en paralelo y manejar resultados
@@ -46,7 +276,7 @@ export class OrderController {
             const clientEmailSuccess = clientEmailResult.status === 'fulfilled';
             const adminEmailSuccess = adminEmailResult.status === 'fulfilled';
 
-            // Log errores para debugging (opcional)
+            //* Debugging Console Logs
             if (!clientEmailSuccess) {
                 console.error('Failed to send client email:', clientEmailResult.reason);
             }
