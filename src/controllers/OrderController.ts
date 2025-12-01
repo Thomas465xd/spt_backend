@@ -1,10 +1,10 @@
 import type { Request, Response } from "express";
-import User from "../models/User";
+import User, { UserInterface } from "../models/User";
 import { OrderEmail } from "../emails/OrderEmail";
 import { ForbiddenError } from "../errors/forbidden-error";
-import { InternalServerError } from "../errors/server-error";
-import Order from "../models/Order";
+import Order, { OrderStatus } from "../models/Order";
 import { NotFoundError } from "../errors/not-found";
+import { OrderStatusEmail } from "../emails/status";
 
 interface OrderData {
     token: string;
@@ -91,10 +91,10 @@ export class OrderController {
         res.status(200).json(order)
     }
 
-    //TODO Get all Registered Orders under the same businessRut attached to the user
+    //*  Get all Registered Orders under the same businessRut attached to the user
     static getOrdersUser = async (req: Request, res: Response) => {
-        // Get the current user
-        const user = req.user; 
+        //! Get the current user
+        const userBusinessRut = req.user.businessRut; 
 
         // Get the page and perPage query parameters (default values if not provided)
         const page = parseInt(req.query.page as string) || 1;
@@ -102,6 +102,9 @@ export class OrderController {
 
         // Search Filters
         const filters: any = {};
+
+        //! filter orders by user | CRITICAL
+        filters.businessRut = userBusinessRut; 
 
         //* ?status="cancelled"
         if (req.query.status) {
@@ -123,14 +126,14 @@ export class OrderController {
             filters.country = { $regex: new RegExp(`^${req.query.country}$`, "i") }
         }
 
-        //TODO: Add user filtering by businessRut
+        //TODO Filter by only orders registered by current user
 
         // Calculate skip and limit for pagination
         const skip = (page - 1) * perPage;
         const limit = perPage;
 
         // Get the total number of unconfirmed orders
-        const totalOrders = await Order.countDocuments();
+        const totalOrders = await Order.countDocuments({ businessRut: userBusinessRut });
 
         // Fetch the orders for the current page with pagination
         const orders = await Order.find(filters) 
@@ -145,16 +148,19 @@ export class OrderController {
             orders, 
             totalOrders,
             totalPages, 
+            businessRut: userBusinessRut,
             perPage, 
             currentPage: page 
         });
     }
 
-    //TODO Get a single order registered under the businessRut attached to the current logged user
+    //* Get a single order registered under the businessRut attached to the current logged user
     static getOrderByIdUser = async (req: Request, res: Response) => {
         const { orderId } = req.params; 
+        const businessRut = req.user.businessRut; 
 
-        const order = await Order.findById(orderId); 
+        //! Critical for the search
+        const order = await Order.findOne({ _id: orderId, businessRut }); 
         if(!order) {
             throw new NotFoundError("Orden no Encontrada")
         }
@@ -164,7 +170,7 @@ export class OrderController {
 
     //^ CREATE ORDER
     static createOrder = async (req: Request, res: Response) => {
-        const { items, payment, shipper, country, userId, businessName, businessRut, total } = req.body; 
+        const { items, payment, shipper, country, user, businessName, businessRut, total } = req.body; 
 
         // Create the Order
         const order = await Order.build({
@@ -172,7 +178,7 @@ export class OrderController {
             payment, 
             shipper, 
             country, 
-            userId,
+            user,
             businessName, 
             businessRut,
             total
@@ -198,7 +204,7 @@ export class OrderController {
         }
 
         // Only update fields that are provided | EXCEPT STATUS
-        const allowedUpdates = ['items', 'payment', 'shipper', 'country', 'userId', 'businessRut', 'businessName', 'total'];
+        const allowedUpdates = ['items', 'payment', 'shipper', 'country', 'user', 'businessRut', 'businessName', 'total'];
         const updates = Object.keys(req.body)
             .filter(key => allowedUpdates.includes(key))
             .reduce((obj, key) => {
@@ -220,22 +226,47 @@ export class OrderController {
         const { orderId } = req.params; 
         const { status } = req.body; // Validated in the router
     
-        const order = await Order.findById(orderId); 
+        const order = await Order.findById(orderId).populate<{ user: UserInterface }>("user");
         if(!order) {
             throw new NotFoundError("Orden no Encontrada")
         }
 
         // Set order Status
-        order.set({ status })
+        order.status = status; 
+
+        // Get the user info from the populted user info
+        const userData = order.user; 
+
+        // Save before sending emails (in case email fails, status is still updated)
+        await order.save(); 
 
         //TODO: EMAIL SENDING LOGIC DEPENDING ON THE STATUSES
-
-        await order.save(); 
+        // Send email based on status
+        try {
+            switch(status) {
+                case OrderStatus.Pending:
+                    await OrderStatusEmail.Pending.send(userData);
+                    break;
+                case OrderStatus.Sent:
+                    await OrderStatusEmail.Sent.send(userData);
+                    break;
+                case OrderStatus.Delivered:
+                    await OrderStatusEmail.Delivered.send(userData);
+                    break;
+                case OrderStatus.Cancelled:
+                    await OrderStatusEmail.Cancelled.send(userData);
+                    break;
+            }
+        } catch (emailError) {
+            // Log email error but don't fail the request
+            console.error("Error sending status update email:", emailError);
+            // Email failed but order status was updated successfully
+        }
 
         res.status(200).json({ 
             message: "Estado de la Orden Actualizado Exitosamente", 
             order
-        })
+        });
     }
 
     //! DELETE ORDER

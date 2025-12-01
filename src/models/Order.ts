@@ -1,6 +1,7 @@
 import mongoose, { Schema, Document, Model, Types } from "mongoose";
+import { UserInterface } from "./User";
 
-enum OrderStatus {
+export enum OrderStatus {
     Pending = "Pendiente",
     Sent = "En Transito", 
     Delivered = "Entregado", 
@@ -34,7 +35,7 @@ export interface OrderInterface extends Document {
     // a business, reducing the complexity of the query.
     businessName: string
     businessRut: string
-    userId: Types.ObjectId; 
+    user: Types.ObjectId | UserInterface; 
 
     //TODO: General Business Data
 
@@ -54,7 +55,7 @@ export interface OrderAttrs {
 
     businessName: string 
     businessRut: string
-    userId: Types.ObjectId
+    user: Types.ObjectId | UserInterface
 }
 
 // Model interface = adds a build method that uses OrderAttrs
@@ -130,7 +131,7 @@ const orderSchema : Schema = new Schema(
             required: true, 
             trim: true
         },
-        userId: {
+        user: {
             type: Schema.Types.ObjectId, 
             required: true, 
             ref: "User"

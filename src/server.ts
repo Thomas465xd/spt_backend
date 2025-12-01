@@ -59,7 +59,7 @@ app.use(express.json())
 
 // Routes
 app.use("/api/auth", authRouter);
-app.use("/api/order", orderRouter);
+app.use("/api/orders", orderRouter);
 
 //? Trigger not-found error | before Error Handler & after router declarations
 app.all("/{*splat}/" , async (req, res, next) => {

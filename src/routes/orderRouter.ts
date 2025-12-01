@@ -163,8 +163,8 @@ router.post("/",
             return true;
         }),
     
-    // Validate userId
-    body("userId")
+    // Validate user
+    body("user")
         .notEmpty()
         .withMessage("El ID de usuario es obligatorio")
         .isMongoId()
@@ -309,8 +309,8 @@ router.patch("/:orderId",
             return true;
         }),
     
-    // Validate userId
-    body("userId")
+    // Validate user
+    body("user")
         .optional()
         .notEmpty()
         .withMessage("El ID de usuario es obligatorio")
