@@ -1,5 +1,6 @@
 import resend from "../../config/resend";
 import { InternalServerError } from "../../errors/server-error";
+import { OrderInterface } from "../../models/Order";
 import { UserInterface } from "../../models/User";
 
 // export interface UserInterface extends Document {
@@ -31,7 +32,7 @@ import { UserInterface } from "../../models/User";
 // }
 
 export class SentOrderEmail {
-    static sendSentOrderEmail = async (user: UserInterface) => { 
+    static sendSentOrderEmail = async (user: UserInterface, order: OrderInterface) => { 
         try {
             // Sent HTML
             const emailHTML = ``;

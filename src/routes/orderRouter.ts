@@ -16,6 +16,15 @@ router.get("/user",
         .optional()
         .isIn(["Pendiente", "pendiente", "En Transito", "en transito", "Entregado", "entregado", "Cancelado", "cancelado"])
         .withMessage("Estado inválido"),
+    query("country")
+        .optional()
+        .trim()
+        .isString()
+        .withMessage("El País debe ser un texto válido"),
+    query("orderId")
+        .optional()
+        .isMongoId().withMessage("ID de orden Inválido")
+        .notEmpty().withMessage("El ID de la Orden es Obligatorio"),
     authenticate, 
     handleInputErrors,
     OrderController.getOrdersUser
@@ -42,6 +51,12 @@ router.get('/',
         .trim()
         .isString()
         .withMessage("El País debe ser un texto válido"),
+    query("businessRut")
+        .optional()
+        .trim()
+        .notEmpty().withMessage("El RUT de la Empresa no puede estar vacío")
+        .matches(/^\d{1,2}\.?\d{3}\.?\d{3}-[\dkK]$/)
+        .withMessage("Formato de RUT inválido. Ejemplo: 12.345.678-9"),
     authenticate, 
     authorizeAdmin,
     handleInputErrors,
@@ -135,6 +150,14 @@ router.post("/",
         .isString()
         .withMessage("El expedidor debe ser un texto válido"),
 
+    // Validate trackingNumber
+    body("trackingNumber")
+        .notEmpty()
+        .withMessage("El Tracking Number es Obligatorio")
+        .trim()
+        .isString()
+        .withMessage("El Tracking Number debe ser un texto válido"),
+
     // Validate country
     body("country")
         .notEmpty()
@@ -177,6 +200,27 @@ router.post("/",
         .notEmpty().withMessage("El RUT de la Empresa es obligatorio")
         .matches(/^\d{1,2}\.?\d{3}\.?\d{3}-[\dkK]$/)
         .withMessage("Formato de RUT de la empresa inválido. Ejemplo: 12.345.678-9"),
+    body("estimatedDelivery")
+        .notEmpty()
+        .withMessage("La Fecha de Entrega Estimada es Obligatoria")
+        .isISO8601()
+        .withMessage("La Fecha de Entrega Estimada debe ser una fecha válida")
+        .toDate()
+        .custom((value) => {
+            if (value < new Date()) {
+                throw new Error("La Fecha Estimada debe ser en el futuro");
+            }
+            return true;
+        }),
+
+    // Validate deliveredAt date
+    body("deliveredAt")
+        .optional({ checkFalsy: true })
+        .notEmpty()
+        .isISO8601()
+        .withMessage("La Fecha de Entrega Real debe ser una fecha válida")
+        .toDate(),
+        
     handleInputErrors,
     authenticate, 
     authorizeAdmin, 
@@ -279,6 +323,15 @@ router.patch("/:orderId",
         .isString()
         .withMessage("El Expedidor debe ser un texto válido"),
 
+    // Validate trackingNumber
+    body("trackingNumber")
+        .optional()
+        .notEmpty()
+        .withMessage("El Tracking Number es Obligatorio")
+        .trim()
+        .isString()
+        .withMessage("El Tracking Number debe ser un texto válido"),
+
     // Validate country
     body("country")
         .optional()
@@ -317,16 +370,41 @@ router.patch("/:orderId",
         .isMongoId()
         .withMessage("El ID de usuario no es válido"),
     
+    // Validate businessName
     body("businessName")
         .optional()
         .notEmpty()
         .withMessage("El Nombre de la Empresa es Obligatorio"),
 
+    // Validate businessRut
     body("businessRut")
         .optional()
         .notEmpty().withMessage("El RUT de la Empresa es obligatorio")
         .matches(/^\d{1,2}\.?\d{3}\.?\d{3}-[\dkK]$/)
         .withMessage("Formato de RUT de la empresa inválido. Ejemplo: 12.345.678-9"),
+    
+    // Validate estimatedDelivery date
+    body("estimatedDelivery")
+        .optional()
+        .notEmpty()
+        .withMessage("La Fecha de Entrega Estimada es Obligatoria")
+        .isISO8601()
+        .withMessage("La Fecha de Entrega Estimada debe ser una fecha válida")
+        .toDate()
+        .custom((value) => {
+            if (value < new Date()) {
+                throw new Error("La Fecha Estimada debe ser en el futuro");
+            }
+            return true;
+        }),
+
+    // Validate deliveredAt date
+    body("deliveredAt")
+        .optional({ checkFalsy: true })
+        .notEmpty()
+        .isISO8601()
+        .withMessage("La Fecha de Entrega Real debe ser una fecha válida")
+        .toDate(), 
 
     handleInputErrors, 
     authenticate, 
@@ -365,7 +443,7 @@ router.delete("/:orderId",
 
 //? Send Order Emails
 
-// Send Order Email to Admin & Client on Order Submission
+// Send Order Email to Admin & Client on Order Submission | Deprecated until further updates
 router.post(
 	"/send",
 	body("token").notEmpty().withMessage("El Token de la Orden es Obligatorio"),

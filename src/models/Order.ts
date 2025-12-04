@@ -23,7 +23,11 @@ export interface OrderInterface extends Document {
     items: OrderItem[];
     
     payment: string
+
+    // DHL, FedEx or any courier provides a tracking number for the order
+    trackingNumber: string
     shipper: string
+
     status: string
     country: string
 
@@ -39,6 +43,10 @@ export interface OrderInterface extends Document {
 
     //TODO: General Business Data
 
+    // Estimated delivery
+    estimatedDelivery: Date; // Required for order creation
+    deliveredAt: Date; // Not Required, can be set by the admin later
+
     // ordering date
     createdAt: Date; 
     updatedAt: Date; 
@@ -48,6 +56,7 @@ export interface OrderInterface extends Document {
 export interface OrderAttrs {
     items: OrderItem[]
     payment: string
+    trackingNumber: string
     shipper: string 
     status?: OrderStatus
     country: string 
@@ -56,6 +65,9 @@ export interface OrderAttrs {
     businessName: string 
     businessRut: string
     user: Types.ObjectId | UserInterface
+
+    estimatedDelivery: Date; 
+    deliveredAt?: Date; 
 }
 
 // Model interface = adds a build method that uses OrderAttrs
@@ -99,6 +111,11 @@ const orderSchema : Schema = new Schema(
             required: true, 
             trim: true
         },
+        trackingNumber: {
+            type: String, 
+            required: true, 
+            trim: true
+        },
         shipper: {
             type: String, 
             required: true, 
@@ -136,6 +153,15 @@ const orderSchema : Schema = new Schema(
             required: true, 
             ref: "User"
         }, 
+        estimatedDelivery: {
+            type: Date, 
+            required: true, 
+        }, 
+        deliveredAt: {
+            type: Date, 
+            required: false, 
+            default: null
+        }
     }, 
     {
         timestamps: true,
