@@ -3,6 +3,9 @@ import User, { UserInterface } from "../models/User";
 import Token from "../models/Token";
 import { generatePasswordResetToken } from "../utils/jwt";
 import { ConfirmEmail } from "../emails/ConfirmEmail";
+import { RequestConflictError } from "../errors/conflict-error";
+import { InternalServerError } from "../errors/server-error";
+import { NotFoundError } from "../errors/not-found";
 
 export class AdminController {
     // Confirm a user by it's token and generate a new token for creating a password 
@@ -18,9 +21,7 @@ export class AdminController {
 
             // Verify if the user is already confirmed
             if(user.confirmed) {
-                const error = new Error("El Usuario ya esta Confirmado");
-                res.status(409).json({ message: error.message });
-                return
+                throw new RequestConflictError("El Usuario ya esta Confirmado")
             }
 
             // Confirm the user & Delete the token
@@ -43,7 +44,7 @@ export class AdminController {
 
             res.status(200).json({ message: "Usuario Confirmado y Email enviado para crear contraseña" })
         } catch (error) {
-            res.status(500).json({ message: "Internal Server Error" })
+            throw new InternalServerError(); 
         }
     }
 
@@ -84,7 +85,7 @@ export class AdminController {
             
             res.status(200).json({ users, totalUsers, totalPages });
         } catch (error) {
-            res.status(500).json({ message: "Internal Server Error" })
+            throw new InternalServerError();
         }
     }
 
@@ -125,7 +126,7 @@ export class AdminController {
 
             res.status(200).json({users, totalUsers, totalPages, searchRUT, searchEmail});
         } catch (error) {
-            res.status(500).json({ message: "Internal Server Error" })
+            throw new InternalServerError(); 
         }
     }
 
@@ -140,9 +141,7 @@ export class AdminController {
                 const { token } = await Token.findOne({ userId: id, type: "admin_confirmation" });
             
                 if(!token) {
-                    const error = new Error("El Token del usuario a expirado.");
-                    res.status(409).json({ message: error.message });
-                    return
+                    throw new RequestConflictError("El Token del usuario a expirado.")
                 }
 
                 res.status(200).json({ user, token });
@@ -151,7 +150,7 @@ export class AdminController {
     
             res.status(200).json({ user });
         } catch (error) {
-            res.status(500).json({ message: "Error interno del servidor" });
+            throw new InternalServerError(); 
         }
     };
 
@@ -177,9 +176,7 @@ export class AdminController {
             //console.log("User found:", user);
 
             if (!user){
-                const error = new Error("Usuario no encontrado.");
-                res.status(404).json({ message: error.message });
-                return
+                throw new NotFoundError("Usuario no Encontrado")
             }
 
             res.status(200).json( user );
@@ -187,8 +184,7 @@ export class AdminController {
 
         } catch (error) {
             console.error("Error en getUserByRut:", error);
-            res.status(500).json({ message: "Error interno del servidor" });
-            return
+            throw new InternalServerError(); 
         }
     };
 
@@ -199,8 +195,7 @@ export class AdminController {
 
             res.status(200).json( user );
         } catch (error) {
-            res.status(500).json({ message: "Error interno del servidor" });
-            return
+            throw new InternalServerError(); 
         }
     }
 
@@ -214,11 +209,8 @@ export class AdminController {
             await user.save(); 
 
             res.status(200).json({ message: "Descuento Asignado Exitosamente"});
-            return
-            
         } catch (error) {
-            res.status(500).json({ message: "Error interno del servidor" });
-            return
+            throw new InternalServerError(); 
         }
     }
 
@@ -237,8 +229,7 @@ export class AdminController {
                 res.status(200).json({ message: "Usuario Desbloqueado Exitosamente" });
             }
         } catch (error) {
-            res.status(500).json({ message: "Error interno del servidor" });
-            return
+            throw new InternalServerError(); 
         }
     }
 
@@ -247,9 +238,7 @@ export class AdminController {
             const user = req.user; 
 
             if(user.passwordSet) {
-                const error = new Error("No se puede eliminar un usuario con una contraseña establecida, puedes bloquearlo o desbloquearlo.");
-                res.status(409).json({ message: error.message });
-                return
+                throw new RequestConflictError("No se puede eliminar un usuario con una contraseña establecida, puedes bloquearlo o desbloquearlo.")
             } else {
                 await user.deleteOne();
                 await Token.deleteMany({ userId: user.id });
@@ -258,8 +247,7 @@ export class AdminController {
                 return
             }
         } catch (error) {
-            res.status(500).json({ message: "Error interno del servidor" });
-            return
+            throw new InternalServerError(); 
         }
     }
 }

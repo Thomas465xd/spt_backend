@@ -1,4 +1,3 @@
-import { response } from "express";
 import resend from "../config/resend";
 
 interface EmailInterface {

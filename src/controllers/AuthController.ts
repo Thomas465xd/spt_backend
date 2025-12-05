@@ -4,6 +4,10 @@ import Token from "../models/Token";
 import { generateAdminJWT, generateConfirmationToken, generateJWT, generatePasswordResetToken } from "../utils/jwt";
 import { ConfirmEmail } from "../emails/ConfirmEmail";
 import { comparePassword, hashPassword } from "../utils/auth";
+import { RequestConflictError } from "../errors/conflict-error";
+import { InternalServerError } from "../errors/server-error";
+import { NotFoundError } from "../errors/not-found";
+import { NotAuthorizedError } from "../errors/not-authorized";
 
 export class AuthController {
     static createAccount = async (req: Request, res: Response) => {
@@ -40,7 +44,7 @@ export class AuthController {
 
             res.status(201).json({ message: "Usuario Creado Exitosamente, Hemos enviado su solicitud de verificación." })
         } catch (error) {
-            res.status(500).json({ message: "Internal Server Error" })
+            throw new InternalServerError
         }
     }
 
@@ -55,7 +59,7 @@ export class AuthController {
                 message: "Token Valido, Configure su contraseña"
             })
         } catch (error) {
-            res.status(500).json({ message: "Internal Server Error" })
+            throw new InternalServerError
         }
     }
 
@@ -71,16 +75,12 @@ export class AuthController {
 
             // Verify if the user is already confirmed
             if(!user.confirmed) {
-                const error = new Error("El Usuario no esta Confirmado");
-                res.status(409).json({ message: error.message });
-                return
+                throw new RequestConflictError("El Usuario no esta Confirmado")
             }
 
             // Verify if the user has already set the password
             if(user.passwordSet) {
-                const error = new Error("La Contraseña ya esta Establecida");
-                res.status(409).json({ message: error.message });
-                return
+                throw new RequestConflictError("La Contraseña ya esta establecida")
             }
 
             // Set the password & Delete the token
@@ -95,7 +95,7 @@ export class AuthController {
 
             res.status(200).json({ message: "Contraseña Establecida Exitosamente, inicie sesión" })
         } catch (error) {
-            res.status(500).json({ message: "Internal Server Error" })
+            throw new InternalServerError
         }
     }
 
@@ -107,29 +107,21 @@ export class AuthController {
             const user = await User.findOne({ email });
 
             if(!user) {
-                const error = new Error("El Usuario no existe");
-                res.status(404).json({ message: error.message });
-                return
+                throw new NotFoundError("El Usuario no Existe")
             }
 
             const userRut = await User.findOne({ rut });
 
             if(!userRut) {
-                const error = new Error("El RUT no existe");
-                res.status(404).json({ message: error.message });
-                return
+                throw new NotFoundError("El RUT no Existe")
             }
 
             if(!user.confirmed) {
-                const error = new Error("El Usuario no esta Confirmado");
-                res.status(409).json({ message: error.message });
-                return
+                throw new RequestConflictError("El Usuario no esta Confirmado")
             }
 
             if(!user.passwordSet) {
-                const error = new Error("La Contraseña no esta Establecida");
-                res.status(409).json({ message: error.message });
-                return
+                throw new RequestConflictError("La Contraseña no esta Establecida")
             }
 
             // Compare the password
@@ -137,9 +129,7 @@ export class AuthController {
 
             /** Check if the passwords match */
             if(!isMatch) {
-                const error = new Error("Contraseña Incorrecta");
-                res.status(401).json({ message: error.message });
-                return
+                throw new NotAuthorizedError("Contraseña Incorrecta")
             }
 
         // Generar el token dependiendo si es admin o usuario normal
@@ -152,7 +142,7 @@ export class AuthController {
             token
         });
         } catch (error) {
-            res.status(500).json({ message: "Internal Server Error" })
+            throw new InternalServerError
         }
     }
 
@@ -214,7 +204,7 @@ export class AuthController {
                 res.status(200).json({ message: "Recibiras un correo para establecer tu contraseña" });
             }
         } catch (error) {
-            res.status(500).json({ message: "Internal Server Error" })
+            throw new InternalServerError
         }
     }
 
@@ -248,7 +238,7 @@ export class AuthController {
 
             res.status(200).json({ message: "Contraseña Reestablecida Exitosamente, inicie sesión" });
         } catch (error) {
-            res.status(500).json({ message: "Internal Server Error" })
+            throw new InternalServerError
             return
         }
     }
