@@ -207,9 +207,16 @@ router.post("/",
         .withMessage("La Fecha de Entrega Estimada debe ser una fecha válida")
         .toDate()
         .custom((value) => {
-            if (value < new Date()) {
-                throw new Error("La Fecha Estimada debe ser en el futuro");
+            const today = new Date();
+            today.setHours(0, 0, 0, 0); // midnight
+
+            const delivery = new Date(value);
+            delivery.setHours(0, 0, 0, 0);
+
+            if (delivery < today) {
+                throw new Error("La Fecha Estimada debe ser hoy o una fecha futura");
             }
+
             return true;
         }),
 

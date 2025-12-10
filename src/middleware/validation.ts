@@ -3,7 +3,8 @@ import { validationResult } from "express-validator";
 import { RequestValidationError } from "../errors/request-validation";
 
 export const handleInputErrors = (req: Request, res: Response, next: NextFunction): void => {
-    //console.log(req.body);
+    //console.log("handleInputErrors triggered");
+
     let errors = validationResult(req);
 
     if (!errors.isEmpty()) {

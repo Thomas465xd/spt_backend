@@ -48,6 +48,9 @@ connectDB()
 
 const app = express()
 
+// This parses JSON bodies
+app.use(express.json()); 
+
 // Activar CORS
 app.use(cors(corsConfig));
 

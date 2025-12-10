@@ -243,9 +243,9 @@ router.patch("/admin/user/:id/discount",
         .notEmpty().withMessage("El Descuento es Obligatorio")
         .isNumeric().withMessage("El Descuento debe ser un número")
         .isInt({ min: 0, max: 100 }).withMessage("El Descuento debe estar entre 0 y 100"),
+    handleInputErrors, 
     authenticate, 
     authorizeAdmin, 
-    handleInputErrors, 
     userExists, 
     AdminController.updateUserDiscount
 )

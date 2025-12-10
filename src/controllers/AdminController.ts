@@ -13,8 +13,13 @@ export class AdminController {
         try {
             // Validate received token
             const { token } = req.params;
+            //console.log(token)
 
             const tokenRecord = await Token.findOne({ token, type: "admin_confirmation" });
+
+            if (!tokenRecord) {
+                throw new NotFoundError("Token inválido o expirado");
+            }
 
             // Find the user in the DB
             const user = await User.findById(tokenRecord.userId);
@@ -27,7 +32,8 @@ export class AdminController {
             // Confirm the user & Delete the token
             user.confirmed = true;
             
-            await Promise.allSettled([user.save(), tokenRecord.deleteOne()]);
+            await user.save()
+            await tokenRecord.deleteOne()
 
             // Generate new token for creating the password
             const passwordResetToken = await Token.create({
@@ -44,6 +50,7 @@ export class AdminController {
 
             res.status(200).json({ message: "Usuario Confirmado y Email enviado para crear contraseña" })
         } catch (error) {
+            console.log(error)
             throw new InternalServerError(); 
         }
     }

@@ -1,6 +1,6 @@
 import mongoose, { Schema, Document, Types } from 'mongoose';
 
-interface TokenInterface extends Document {
+export interface TokenInterface extends Document {
     userId: Types.ObjectId
     token: string
     type: string
