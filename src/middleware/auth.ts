@@ -78,23 +78,19 @@ export const authorizeAdmin = (req: Request, res: Response, next: NextFunction) 
 
 // Validates for an already existing users when registering a new one
 export const checkExistingUser = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-        const { email, rut } = req.body;
+    const { email, rut } = req.body;
 
-        const userExists = await User.findOne({ email });
-        if (userExists) {
-            throw new RequestConflictError("El Usuario ya está Registrado")
-        }
-
-        const userRutExists = await User.findOne({ rut });
-        if (userRutExists) {
-            throw new RequestConflictError("El RUT ya está Registrado"); 
-        }
-
-        next();
-    } catch (error) {
-
+    const userExists = await User.findOne({ email });
+    if (userExists) {
+        throw new RequestConflictError("El Usuario ya está Registrado")
     }
+
+    const userRutExists = await User.findOne({ rut });
+    if (userRutExists) {
+        throw new RequestConflictError("El RUT ya está Registrado"); 
+    }
+
+    next();
 };
 
 // Checks if the user exists
