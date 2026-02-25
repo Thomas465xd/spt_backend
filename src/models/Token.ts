@@ -30,6 +30,8 @@ const tokenSchema : Schema = new Schema({
     }
 })
 
+tokenSchema.index({ token: 1, type: 1 })
+
 const Token = mongoose.model<TokenInterface>("Token", tokenSchema);
 
 export default Token;

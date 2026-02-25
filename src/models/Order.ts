@@ -34,11 +34,11 @@ export interface OrderInterface extends Document {
     total: number
 
     // Using populate will get other user data
-    // Either though businessRut & businessName is redundant here since we got the userId, 
+    // Either though businessId & businessName is redundant here since we got the userId, 
     // it can serve a searching purpose when trying to find all registered orders by
     // a business, reducing the complexity of the query.
     businessName: string
-    businessRut: string
+    businessId: string
     user: Types.ObjectId | UserInterface; 
 
     //TODO: General Business Data
@@ -63,7 +63,7 @@ export interface OrderAttrs {
     total: number 
 
     businessName: string 
-    businessRut: string
+    businessId: string
     user: Types.ObjectId | UserInterface
 
     estimatedDelivery: Date; 
@@ -143,7 +143,7 @@ const orderSchema : Schema = new Schema(
             required: true, 
             trim: true
         },
-        businessRut: {
+        businessId: {
             type: String, 
             required: true, 
             trim: true
