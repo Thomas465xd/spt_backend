@@ -168,6 +168,8 @@ const orderSchema : Schema = new Schema(
     }
 );
 
+orderSchema.index({ createdAt: -1 }); 
+
 // Add  custom static "build" method
 orderSchema.statics.build = (attrs: OrderAttrs) => {
     return new Order(attrs);

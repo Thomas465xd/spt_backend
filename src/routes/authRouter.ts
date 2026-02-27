@@ -5,7 +5,7 @@ import { handleInputErrors } from "../middleware/validation";
 import { authenticate, authorizeAdmin, checkExistingUser, checkUserStatus, userExists, validateToken } from "../middleware/auth";
 import { AdminController } from "../controllers/AdminController";
 import { ProfileController } from "../controllers/ProfileController";
-import { Countries, Identifications } from "../models/User";
+import { Countries, Identifications } from "../types";
 import { validatePersonalId, validateBusinessId } from "../utils/validation";
 
 const router = Router();

@@ -70,8 +70,9 @@ export class AdminController {
             const skip = (page - 1) * perPage;
             const limit = perPage;
 
+            //TODO: Cover queries with indexes
             // Build query filter
-            const query: any = { confirmed: true };
+            const query : any = { confirmed: true };
 
             if (searchId || searchEmail) {
                 query.$or = [];
@@ -117,7 +118,7 @@ export class AdminController {
             const limit = perPage;
 
             // Build query filter
-            const query: any = { confirmed: false };
+            const query : any = { confirmed: false };
 
             if (searchId || searchEmail) {
                 query.$or = [];
@@ -137,7 +138,7 @@ export class AdminController {
             const users = await User.find(query) 
                 .skip(skip)
                 .limit(limit)
-                .sort({ passwordSet: 1, createdAt: -1 }); // Sort by createdAt in descending order
+                .sort({ createdAt: -1, passwordSet: 1,  }); // Sort by createdAt in descending order
 
             // Calculate the total number of pages
             const totalPages = Math.ceil(totalUsers / perPage);
@@ -192,55 +193,43 @@ export class AdminController {
         res.status(200).json( user );
     }
 
-    // Assign a discount to a user | discount is a number between 0 and 100
+    // Assign a discount to a user | discount is a number between 0 and 100 (validated earlier)
     static updateUserDiscount = async (req: Request, res: Response) => {
-        try {
-            const user = req.user;
-            //console.log(user)
+        const user = req.user;
+        //console.log(user)
 
-            user.discount = req.body.discount
-            await user.save(); 
+        user.discount = req.body.discount
+        await user.save(); 
 
-            res.status(200).json({ message: "Descuento Asignado Exitosamente"});
-        } catch (error) {
-            throw new InternalServerError(); 
-        }
+        res.status(200).json({ message: "Descuento Asignado Exitosamente"});
     }
 
     static updateUserStatus = async (req: Request, res: Response) => {
-        try {
-            const user = req.user;
-            //console.log(user)
+        const user = req.user;
+        //console.log(user)
 
-            if(user.confirmed) {
-                user.confirmed = false;
-                await user.save();
-                res.status(200).json({ message: "Usuario Bloqueado Exitosamente" });
-            } else {
-                user.confirmed = true;
-                await user.save();
-                res.status(200).json({ message: "Usuario Desbloqueado Exitosamente" });
-            }
-        } catch (error) {
-            throw new InternalServerError(); 
+        if(user.confirmed) {
+            user.confirmed = false;
+            await user.save();
+            res.status(200).json({ message: "Usuario Bloqueado Exitosamente" });
+        } else {
+            user.confirmed = true;
+            await user.save();
+            res.status(200).json({ message: "Usuario Desbloqueado Exitosamente" });
         }
     }
 
     static deleteUser = async (req: Request, res: Response) => {
-        try {
-            const user = req.user; 
+        const user = req.user; 
 
-            if(user.passwordSet) {
-                throw new RequestConflictError("No se puede eliminar un usuario con una contraseña establecida, puedes bloquearlo o desbloquearlo.")
-            } else {
-                await user.deleteOne();
-                await Token.deleteMany({ userId: user.id });
-                
-                res.status(200).json({ message: "Usuario Eliminado Exitosamente" });
-                return
-            }
-        } catch (error) {
-            throw new InternalServerError(); 
+        if(user.passwordSet) {
+            throw new RequestConflictError("No se puede eliminar un usuario con una contraseña establecida, puedes bloquearlo o desbloquearlo.")
+        } else {
+            await user.deleteOne();
+            await Token.deleteMany({ userId: user.id });
+            
+            res.status(200).json({ message: "Usuario Eliminado Exitosamente" });
+            return
         }
     }
 }

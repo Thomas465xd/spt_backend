@@ -1,5 +1,8 @@
 import mongoose, { Schema, Document, Model } from 'mongoose';
 import { formatChileanRUT, formatColombianNIT, formatPeruvianRUC, hashPassword } from '../utils';
+import { Countries, Identifications } from '../types';
+
+export { Countries, Identifications };
 
 const userRegion = [
     "Arica y Parinacota",
@@ -20,18 +23,7 @@ const userRegion = [
     "Magallanes"
 ] as const;
 
-// TODO: Add support for RUC (peruvian) and NIT (colombian) for persoanl use and for business use
-export enum Countries {
-    Peru = "Peru", 
-    Chile = "Chile", 
-    Colombia = "Colombia"
-}
-
-export enum Identifications {
-    Peru = "RUC", 
-    Chile = "RUT", 
-    Colombia = "NIT", 
-}
+// Countries and Identifications enums are now in ../types to avoid circular dependencies
 
 export interface UserInterface extends Document {
     // Base user info
@@ -105,7 +97,6 @@ const userSchema = new Schema<UserInterface, UserModel>({
         required: true,
         trim: true,
         lowercase: true,
-        unique: true
     },
     phone: {
         type: String,
@@ -124,7 +115,6 @@ const userSchema = new Schema<UserInterface, UserModel>({
         type: String,
         required: true,
         trim: true,
-        unique: true
     },
     businessId: {
         type: String,
@@ -202,8 +192,9 @@ const userSchema = new Schema<UserInterface, UserModel>({
 }, {timestamps: true})
 
 //~ Indexes
-userSchema.index({ email: 1 })
-userSchema.index({ personalId: 1 })
+userSchema.index({ email: 1 }, { unique: true })
+userSchema.index({ personalId: 1 }, { unique: true })
+userSchema.index({ confirmed: 1, createdAt: -1 })
 
 // Pre-save middleware to format attributes before saving 
 userSchema.pre("save", function(next) {

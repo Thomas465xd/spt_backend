@@ -1,4 +1,4 @@
-import { Countries, Identifications } from "../models/User";
+import { Countries, Identifications } from "../types";
 
 /**
  * Country-aware ID validation patterns
