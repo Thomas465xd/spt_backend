@@ -43,7 +43,7 @@ export class AdminController {
             });
 
             /** Send set password instructions to user */
-            UserEmails.SetPasswordEmail.send({
+            await  UserEmails.SetPasswordEmail.send({
                 email: user.email,
                 name: user.name,
                 token: passwordResetToken.token
@@ -78,8 +78,8 @@ export class AdminController {
                 query.$or = [];
                 if (searchId) {
                     query.$or.push(
-                        { personalId: new RegExp(searchId, "i") },
-                        { businessId: new RegExp(searchId, "i") }
+                        { personalId: new RegExp(String(req.query.personalId).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i') }, 
+                        { businessId: new RegExp(String(req.query.businessId).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i') }
                     );
                 }
                 if (searchEmail) query.$or.push({ email: new RegExp(searchEmail, "i") });
@@ -124,8 +124,8 @@ export class AdminController {
                 query.$or = [];
                 if (searchId) {
                     query.$or.push(
-                        { personalId: new RegExp(searchId, "i") },
-                        { businessId: new RegExp(searchId, "i") }
+                        { personalId: new RegExp(String(req.query.personalId).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i') }, 
+                        { businessId: new RegExp(String(req.query.businessId).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i') }
                     );
                 }
                 if (searchEmail) query.$or.push({ email: new RegExp(searchEmail, "i") });
@@ -173,7 +173,7 @@ export class AdminController {
         }
     };
 
-    //Get user by personal ID
+    // Get user by personal ID
     static getUserByIdentification = async (req: Request, res: Response) => {
         const { identificationId } = req.params;
 

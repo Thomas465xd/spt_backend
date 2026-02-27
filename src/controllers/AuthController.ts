@@ -41,8 +41,12 @@ export class AuthController {
         token.userId = user.id;
         token.token = generateConfirmationToken({ id: user.id });
 
+        // Save the user in the DB
+        await user.save()
+        await token.save()
+
         /** Send the Confirmation Email to the Admin */
-        AdminEmails.ConfirmUser.send({
+        await AdminEmails.ConfirmUser.send({
             userId: user.id,
             email: user.email,
             name: user.name,
@@ -56,14 +60,11 @@ export class AuthController {
             token: token.token
         });
 
-        UserEmails.WelcomeEmail.send({
+        await UserEmails.WelcomeEmail.send({
             email: user.email,
             name: user.name, 
             token: token.token
         })
-
-        // Save the user in the DB
-        await Promise.allSettled([user.save(), token.save()]);
 
         res.status(201).json({ message: "Usuario Creado Exitosamente, Hemos enviado su solicitud de verificación." })
     }
@@ -99,10 +100,8 @@ export class AuthController {
         user.passwordSet = true;
 
         // Delete the token
-        await Promise.allSettled([
-            user.save(),
-            tokenRecord.deleteOne()
-        ]);
+        await user.save(),
+        await tokenRecord.deleteOne()
 
         res.status(200).json({ message: "Contraseña Establecida Exitosamente, inicie sesión" })
     }
@@ -117,10 +116,8 @@ export class AuthController {
             throw new NotFoundError("El Usuario no Existe")
         }
 
-        const userPersonalId = await User.findOne({ personalId });
-
-        if(!userPersonalId) {
-            throw new NotFoundError("La Identificación Personal no Existe")
+        if(!user.personalId === personalId) {
+            throw new NotFoundError("Identificación no existe o incorrecta")
         }
 
         if(!user.confirmed) {
@@ -181,7 +178,7 @@ export class AuthController {
             });
 
             /** Send the Password Reset Email to the User */
-            UserEmails.ResetPasswordEmail.send({
+            await UserEmails.ResetPasswordEmail.send({
                 email: user.email,
                 name: user.name,
                 token: passwordResetToken.token
@@ -197,7 +194,7 @@ export class AuthController {
             });
 
             /** Send the Password Reset Email to the User */
-            UserEmails.ResetPasswordEmail.send({
+            await UserEmails.ResetPasswordEmail.send({
                 email: user.email,
                 name: user.name,
                 token: passwordResetToken.token
@@ -227,13 +224,12 @@ export class AuthController {
         }
 
         // Set the password & Delete the token
+        user.passwordSet = true // at this point user is certainly confirmed, so guard check to ensure his password is set.
         user.password = await hashPassword(req.body.password);
 
         // Delete the token
-        await Promise.allSettled([
-            user.save(),
-            tokenRecord.deleteOne()
-        ]);
+        await user.save(),
+        await tokenRecord.deleteOne()
 
         res.status(200).json({ message: "Contraseña Reestablecida Exitosamente, inicie sesión" });
     }
