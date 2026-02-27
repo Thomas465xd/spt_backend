@@ -1,11 +1,11 @@
 import { Request, Response } from "express";
-import User, { UserInterface } from "../models/User";
+import User from "../models/User";
 import Token from "../models/Token";
 import { generatePasswordResetToken } from "../utils/jwt";
-import { ConfirmEmail } from "../emails/ConfirmEmail";
 import { RequestConflictError } from "../errors/conflict-error";
 import { InternalServerError } from "../errors/server-error";
 import { NotFoundError } from "../errors/not-found";
+import { UserEmails } from "../emails/auth";
 
 export class AdminController {
     // Confirm a user by it's token and generate a new token for creating a password 
@@ -42,7 +42,8 @@ export class AdminController {
                 type: "password_reset"
             });
 
-            ConfirmEmail.sendConfirmationEmailToUser({
+            /** Send set password instructions to user */
+            UserEmails.SetPasswordEmail.send({
                 email: user.email,
                 name: user.name,
                 token: passwordResetToken.token
@@ -62,7 +63,7 @@ export class AdminController {
             const perPage = parseInt(req.query.perPage as string) || 10;
 
             // Search Filters
-            const searchRUT = req.query.searchRUT as string || ""; // Obtener el término de búsqueda
+            const searchId = req.query.searchId as string || ""; // Search by personalId or businessId
             const searchEmail = req.query.searchEmail as string || "";
 
             // Calculate skip and limit for pagination
@@ -72,9 +73,14 @@ export class AdminController {
             // Build query filter
             const query: any = { confirmed: true };
 
-            if (searchRUT || searchEmail) {
+            if (searchId || searchEmail) {
                 query.$or = [];
-                if (searchRUT) query.$or.push({ rut: new RegExp(searchRUT, "i") }); // Case-insensitive search
+                if (searchId) {
+                    query.$or.push(
+                        { personalId: new RegExp(searchId, "i") },
+                        { businessId: new RegExp(searchId, "i") }
+                    );
+                }
                 if (searchEmail) query.$or.push({ email: new RegExp(searchEmail, "i") });
             }
 
@@ -103,7 +109,7 @@ export class AdminController {
             const perPage = parseInt(req.query.perPage as string) || 10;
 
             // Search Filters
-            const searchRUT = req.query.searchRUT as string || ""; // Obtener el término de búsqueda
+            const searchId = req.query.searchId as string || ""; // Search by personalId or businessId
             const searchEmail = req.query.searchEmail as string || "";
 
             // Calculate skip and limit for pagination
@@ -113,9 +119,14 @@ export class AdminController {
             // Build query filter
             const query: any = { confirmed: false };
 
-            if (searchRUT || searchEmail) {
+            if (searchId || searchEmail) {
                 query.$or = [];
-                if (searchRUT) query.$or.push({ rut: new RegExp(searchRUT, "i") }); // Case-insensitive search
+                if (searchId) {
+                    query.$or.push(
+                        { personalId: new RegExp(searchId, "i") },
+                        { businessId: new RegExp(searchId, "i") }
+                    );
+                }
                 if (searchEmail) query.$or.push({ email: new RegExp(searchEmail, "i") });
             }
 
@@ -131,7 +142,7 @@ export class AdminController {
             // Calculate the total number of pages
             const totalPages = Math.ceil(totalUsers / perPage);
 
-            res.status(200).json({users, totalUsers, totalPages, searchRUT, searchEmail});
+            res.status(200).json({users, totalUsers, totalPages, searchId, searchEmail});
         } catch (error) {
             throw new InternalServerError(); 
         }
@@ -161,49 +172,24 @@ export class AdminController {
         }
     };
 
-    //Get user by it's RUT | Format: XX.XXX.XXX-X
-    static getUserByRut = async (req: Request, res: Response) => {
-        try {
-            const { rut } = req.params;
-            //console.log("Received RUT:", rut);
+    //Get user by personal ID
+    static getUserByIdentification = async (req: Request, res: Response) => {
+        const { identificationId } = req.params;
 
-            if (!rut) {
-                const error = new Error("El RUT es requerido.");
-                res.status(400).json({ message: error.message });
-                return
-            }
-
-            const user = await User.findOne({
-                $or: [
-                    { businessRut: rut },
-                    { rut },
-                ]
-            });
-
-            //console.log("User found:", user);
-
-            if (!user){
-                throw new NotFoundError("Usuario no Encontrado")
-            }
-
-            res.status(200).json( user );
-            return 
-
-        } catch (error) {
-            console.error("Error en getUserByRut:", error);
-            throw new InternalServerError(); 
+        const user = await User.findOne({ personalId: identificationId });
+        if (!user){
+            throw new NotFoundError("Usuario no Encontrado")
         }
+
+        res.status(200).json( user );
+        return 
     };
 
     // Get the current authenticated user
     static getAuthenticatedUser = async (req: Request, res: Response) => {
-        try {
-            const user = req.user;
+        const user = req.user;
 
-            res.status(200).json( user );
-        } catch (error) {
-            throw new InternalServerError(); 
-        }
+        res.status(200).json( user );
     }
 
     // Assign a discount to a user | discount is a number between 0 and 100
