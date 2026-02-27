@@ -32,16 +32,10 @@ export class OrderController {
         // Search Filters
         const filters: any = {};
 
-        //! filter orders by businessRut | CRITICAL
-        if (req.query.businessRut) {
-            // Extract only numbers and the verification digit
-            const cleanRut = String(req.query.businessRut)
-                .replace(/[^0-9kK]/g, '') // Keep only numbers and K
-                .toUpperCase();
-            
-            // Search for any businessRut containing these digits
-            filters.businessRut = { 
-                $regex: new RegExp(cleanRut.split('').join('[.\\-]?'), 'i') 
+        //! filter orders by businessId | CRITICAL
+        if (req.query.businessId) {
+            filters.businessId = { 
+                $regex: new RegExp(String(req.query.businessId).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i') 
             };
         }
 
@@ -103,10 +97,10 @@ export class OrderController {
         res.status(200).json(order)
     }
 
-    //*  Get all Registered Orders under the same businessRut attached to the user
+    //*  Get all Registered Orders under the same businessId attached to the user
     static getOrdersUser = async (req: Request, res: Response) => {
         //! Get the current user
-        const userBusinessRut = req.user.businessRut; 
+        const userBusinessId = req.user.businessId; 
 
         // Get the page and perPage query parameters (default values if not provided)
         const page = parseInt(req.query.page as string) || 1;
@@ -115,15 +109,9 @@ export class OrderController {
         // Search Filters
         const filters: any = {};
 
-        //! filter orders by businessRut | CRITICAL
-        // Extract only numbers and the verification digit
-        const cleanRut = String(userBusinessRut)
-            .replace(/[^0-9kK]/g, '') // Keep only numbers and K
-            .toUpperCase();
-        
-        // Search for any businessRut containing these digits
-        filters.businessRut = { 
-            $regex: new RegExp(cleanRut.split('').join('[.\\-]?'), 'i') 
+        //! filter orders by businessId | CRITICAL
+        filters.businessId = { 
+            $regex: new RegExp(String(userBusinessId).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i') 
         };
 
         //* ej. ?status="cancelled"
@@ -172,19 +160,19 @@ export class OrderController {
             orders, 
             totalOrders,
             totalPages, 
-            businessRut: userBusinessRut,
+            businessId: userBusinessId,
             perPage, 
             currentPage: page 
         });
     }
 
-    //* Get a single order registered under the businessRut attached to the current logged user
+    //* Get a single order registered under the businessId attached to the current logged user
     static getOrderByIdUser = async (req: Request, res: Response) => {
         const { orderId } = req.params; 
-        const businessRut = req.user.businessRut; 
+        const businessId = req.user.businessId; 
 
         //! Critical for the search
-        const order = await Order.findOne({ _id: orderId, businessRut }).populate("user"); 
+        const order = await Order.findOne({ _id: orderId, businessId }).populate("user"); 
         if(!order) {
             throw new NotFoundError("Orden no Encontrada")
         }
@@ -194,7 +182,7 @@ export class OrderController {
 
     //^ CREATE ORDER
     static createOrder = async (req: Request, res: Response) => {
-        const { items, payment, shipper, trackingNumber, country, user, businessName, businessRut, total, estimatedDelivery } = req.body; 
+        const { items, payment, shipper, trackingNumber, country, user, businessName, businessId, total, estimatedDelivery } = req.body; 
 
         // Check if user exists
         const userExists = await User.findById(user); 
@@ -210,7 +198,7 @@ export class OrderController {
             country, 
             user,
             businessName, 
-            businessRut,
+            businessId,
             trackingNumber,
             total, 
             estimatedDelivery
@@ -244,7 +232,7 @@ export class OrderController {
             'trackingNumber', 
             'country', 
             'user', 
-            'businessRut', 
+            'businessId', 
             'businessName', 
             'total', 
             'status', 

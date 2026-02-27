@@ -1,0 +1,81 @@
+import resend from "../../config/resend";
+import { InternalServerError } from "../../errors/server-error";
+import { UserEmailInterface } from "../../types";
+
+export class ResetPasswordEmail {
+    static sendResetPasswordEmail = async (user: UserEmailInterface) => {
+        try {
+            const resetLink = `${process.env.FRONTEND_URL}/auth/reset-password/${user.token}`;
+    
+            const emailHtml = `
+                <div style="font-family: 'Inter', Arial, sans-serif; background-color: #f4f4f4; margin: 0; padding: 20px; line-height: 1.6;">
+                    <div style="max-width: 600px; margin: auto; background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                        <div style="background-color: #f57c00; color: white; padding: 30px; border-top-left-radius: 12px; border-top-right-radius: 12px; text-align: center;">
+                            <h1 style="margin: 0; font-size: 24px; color: white;">Restablece tu contraseña 🔐</h1>
+                        </div>
+                        
+                        <div style="padding: 30px; color: #333;">
+                            <p style="font-size: 16px;">Hola <strong>${user.name}</strong>,</p>
+                            
+                            <p style="font-size: 16px; margin-bottom: 20px;">
+                                Hemos recibido una solicitud para restablecer la contraseña de tu cuenta en Portal SPT. Haz clic en el botón a continuación para crear una nueva contraseña:
+                            </p>
+                            
+                            <div style="text-align: center; margin: 25px 0;">
+                                <a href="${resetLink}" style="background-color: #f57c00; color: white; text-decoration: none; padding: 12px 30px; border-radius: 6px; font-weight: bold; display: inline-block; font-size: 16px;">Restablecer Contraseña</a>
+                            </div>
+                            
+                            <div style="background-color: #f9f9f9; border-left: 4px solid #f57c00; padding: 15px; margin-bottom: 20px;">
+                                <p style="margin: 0; font-size: 14px; color: #666;">
+                                    <strong>Importante:</strong><br>
+                                    Si no solicitaste este cambio, puedes ignorar este mensaje. Tu contraseña actual seguirá siendo la misma.
+                                </p>
+                            </div>
+                            
+                            <p style="font-size: 16px; margin-bottom: 20px;">
+                                Si el botón no funciona, copia y pega este enlace en tu navegador:
+                            </p>
+                            
+                            <p style="font-size: 14px; word-break: break-all; background-color: #f9f9f9; padding: 12px; border-radius: 6px;">
+                                ${resetLink}
+                            </p>
+                            
+                            <p style="font-size: 16px; margin-top: 20px;">
+                                Gracias por usar Portal SPT.
+                            </p>
+                            
+                            <div style="text-align: center; margin-top: 30px;">
+                                <p style="font-size: 14px; color: #666;">
+                                    © ${new Date().getFullYear()} Portal SPT | Todos los derechos reservados
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div style="text-align: center; margin-top: 10px; color: #888; font-size: 12px;">
+                        Este es un correo electrónico automático. Por favor, no respondas a este mensaje.
+                    </div>
+                </div>
+            `;
+    
+            const mailOptions = {
+                from: `"Portal SPT" <${process.env.NOREPLY_EMAIL}>`,
+                to: [user.email],
+                subject: "Restablece tu contraseña en Portal SPT",
+                html: emailHtml,
+            };
+    
+            try {
+                const response = await resend.emails.send(mailOptions);
+                console.log("✅ Password reset email sent successfully!", user.email);
+                console.log(response);
+            } catch (error) {
+                console.log("❌ Error sending password reset email:", error);
+            }
+
+        } catch (error) {
+            console.error("❌ Error sending email:", error);
+            throw new InternalServerError(); 
+        }
+    };
+}

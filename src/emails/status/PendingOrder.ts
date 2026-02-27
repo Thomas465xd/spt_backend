@@ -182,8 +182,8 @@ export class PendingOrderEmail {
                                         <td style="color: #1a1a1a; font-size: 14px; font-weight: 600;">${order.businessName}</td>
                                     </tr>
                                     <tr>
-                                        <td style="color: #666; font-size: 14px;">RUT Empresa:</td>
-                                        <td style="color: #1a1a1a; font-size: 14px; font-weight: 600;">${order.businessRut}</td>
+                                        <td style="color: #666; font-size: 14px;">ID Empresa:</td>
+                                        <td style="color: #1a1a1a; font-size: 14px; font-weight: 600;">${order.businessId}</td>
                                     </tr>
                                     <tr>
                                         <td style="color: #666; font-size: 14px;">Dirección:</td>

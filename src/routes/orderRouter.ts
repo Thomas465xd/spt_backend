@@ -51,12 +51,12 @@ router.get('/',
         .trim()
         .isString()
         .withMessage("El País debe ser un texto válido"),
-    query("businessRut")
+    query("businessId")
         .optional()
         .trim()
-        .notEmpty().withMessage("El RUT de la Empresa no puede estar vacío")
-        .matches(/^\d{1,2}\.?\d{3}\.?\d{3}-[\dkK]$/)
-        .withMessage("Formato de RUT inválido. Ejemplo: 12.345.678-9"),
+        .notEmpty().withMessage("La identificación de la empresa no puede estar vacía")
+        .isString()
+        .withMessage("La identificación de la empresa debe ser un texto válido"),
     authenticate, 
     authorizeAdmin,
     handleInputErrors,
@@ -196,10 +196,10 @@ router.post("/",
     body("businessName")
         .notEmpty()
         .withMessage("El Nombre de la Empresa es Obligatorio"),
-    body("businessRut")
-        .notEmpty().withMessage("El RUT de la Empresa es obligatorio")
-        .matches(/^\d{1,2}\.?\d{3}\.?\d{3}-[\dkK]$/)
-        .withMessage("Formato de RUT de la empresa inválido. Ejemplo: 12.345.678-9"),
+    body("businessId")
+        .notEmpty().withMessage("La identificación de la empresa es obligatoria")
+        .isString()
+        .withMessage("La identificación de la empresa debe ser un texto válido"),
     body("estimatedDelivery")
         .notEmpty()
         .withMessage("La Fecha de Entrega Estimada es Obligatoria")
@@ -383,12 +383,12 @@ router.patch("/:orderId",
         .notEmpty()
         .withMessage("El Nombre de la Empresa es Obligatorio"),
 
-    // Validate businessRut
-    body("businessRut")
+    // Validate businessId
+    body("businessId")
         .optional()
-        .notEmpty().withMessage("El RUT de la Empresa es obligatorio")
-        .matches(/^\d{1,2}\.?\d{3}\.?\d{3}-[\dkK]$/)
-        .withMessage("Formato de RUT de la empresa inválido. Ejemplo: 12.345.678-9"),
+        .notEmpty().withMessage("La identificación de la empresa es obligatoria")
+        .isString()
+        .withMessage("La identificación de la empresa debe ser un texto válido"),
     
     // Validate estimatedDelivery date
     body("estimatedDelivery")

@@ -5,29 +5,40 @@ import { handleInputErrors } from "../middleware/validation";
 import { authenticate, authorizeAdmin, checkExistingUser, checkUserStatus, userExists, validateToken } from "../middleware/auth";
 import { AdminController } from "../controllers/AdminController";
 import { ProfileController } from "../controllers/ProfileController";
+import { Countries, Identifications } from "../types";
+import { validatePersonalId, validateBusinessId } from "../utils/validation";
 
 const router = Router();
 
 // Client Auth Routes
 
-/* Create Account */
+//^ Create Account 
 router.post("/create-account", 
     body("name")
         .notEmpty().withMessage("El Nombre es obligatorio"),
     body("businessName")
         .notEmpty().withMessage("El Nombre de la Empresa es obligatorio"),
-    body("rut")
-        .notEmpty().withMessage("El RUT es obligatorio")
-        .matches(/^\d{1,2}\.?\d{3}\.?\d{3}-[\dkK]$/)
-        .withMessage("Formato de RUT inválido. Ejemplo: 12.345.678-9"),
-    body("businessRut")
-        .notEmpty().withMessage("El RUT de la Empresa es obligatorio")
-        .matches(/^\d{1,2}\.?\d{3}\.?\d{3}-[\dkK]$/)
-        .withMessage("Formato de RUT de la empresa inválido. Ejemplo: 12.345.678-9"),
+    body("country")
+        .notEmpty().withMessage("El país es obligatorio")
+        .isIn(Object.values(Countries))
+        .withMessage("País no soportado"),
+    body("idType")
+        .notEmpty().withMessage("El tipo de identificación es obligatorio")
+        .isIn(Object.values(Identifications))
+        .withMessage("Tipo de identificación no válido"),
+    body("personalId")
+        .notEmpty().withMessage("La identificación personal es obligatoria")
+        .custom((value, { req }) => {
+            return validatePersonalId(value, req.body.country as Countries);
+        }),
+    body("businessId")
+        .notEmpty().withMessage("La identificación de la empresa es obligatoria")
+        .custom((value, { req }) => {
+            return validateBusinessId(value, req.body.country as Countries);
+        }),
     body("phone")
-        .matches(/^(\+56\s?9\d{8}|9\d{8})$/)
-        .trim()
-        .withMessage("Formato de teléfono inválido. Example: +56912345678 or 912345678"),
+        .notEmpty().withMessage("El teléfono es obligatorio")
+        .trim(),
     body("email")
         .notEmpty().withMessage("El Email es obligatorio")
         .isEmail().withMessage("El Email no es válido"), 
@@ -71,10 +82,8 @@ router.post("/set-password/:token",
 
 /** Login User */
 router.post("/login",
-    body("rut")
-        .notEmpty().withMessage("El RUT es obligatorio")
-        .matches(/^\d{1,2}\.?\d{3}\.?\d{3}-[\dkK]$/)
-        .withMessage("Formato de RUT inválido. Ejemplo: 12.345.678-9"),
+    body("personalId")
+        .notEmpty().withMessage("La identificación personal es obligatoria"),
     body("email")
         .notEmpty().withMessage("El Email es obligatorio")
         .isEmail().withMessage("El Email no es válido"),
@@ -210,15 +219,14 @@ router.get("/admin/user/:id",
     AdminController.getUserById
 )
 
-/** Get user by RUT */
-router.get("/admin/user/rut/:rut",
-    param("rut")
-        .notEmpty().withMessage("El RUT es obligatorio")
-        .matches(/^\d{1,2}\.\d{3}\.\d{3}-[\dkK]$/).withMessage("Formato de RUT inválido"),
+/** Get user by personal or business ID */
+router.get("/admin/user/identification/:identificationId",
+    param("identificationId")
+        .notEmpty().withMessage("La identificación es obligatoria"),
     authenticate,
     authorizeAdmin,
     handleInputErrors,
-    AdminController.getUserByRut
+    AdminController.getUserByIdentification
 )
 
 
