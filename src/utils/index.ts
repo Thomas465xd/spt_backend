@@ -1,4 +1,4 @@
-export * from "./identifcation"
+export * from "./identification"
 export * from "./auth"
 export * from "./token"
 export * from "./jwt"
