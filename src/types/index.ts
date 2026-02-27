@@ -24,8 +24,8 @@ export interface AdminEmailInterface {
     businessName: string;
     personalId: string;
     businessId: string;
-    idType: string;
-    country: string;
+    idType: Identifications;
+    country: Countries;
     address: string;
     phone: string;
     token: string;
