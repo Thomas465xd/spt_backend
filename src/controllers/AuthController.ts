@@ -2,7 +2,7 @@ import type { Request, Response } from "express";
 import User from "../models/User";
 import Token from "../models/Token";
 import { generateAdminJWT, generateConfirmationToken, generateJWT, generatePasswordResetToken } from "../utils/jwt";
-import { comparePassword, hashPassword } from "../utils/auth";
+import { comparePassword } from "../utils/auth";
 import { RequestConflictError } from "../errors/conflict-error";
 import { NotFoundError } from "../errors/not-found";
 import { NotAuthorizedError } from "../errors/not-authorized";
@@ -96,10 +96,10 @@ export class AuthController {
         }
 
         // Set the password & Delete the token
-        user.password = await hashPassword(req.body.password);
+        user.password = req.body.password;
         user.passwordSet = true;
 
-        // Delete the token
+        // Delete the token (pre-save middleware handles hashing)
         await user.save(),
         await tokenRecord.deleteOne()
 
@@ -225,9 +225,9 @@ export class AuthController {
 
         // Set the password & Delete the token
         user.passwordSet = true // at this point user is certainly confirmed, so guard check to ensure his password is set.
-        user.password = await hashPassword(req.body.password);
+        user.password = req.body.password;
 
-        // Delete the token
+        // Delete the token (pre-save middleware handles hashing)
         await user.save(),
         await tokenRecord.deleteOne()
 
