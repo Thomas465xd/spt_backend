@@ -1,6 +1,6 @@
 import type { Request, Response } from "express";
 import User, { UserInterface } from "../models/User";
-import { comparePassword, hashPassword } from "../utils/auth";
+import { comparePassword } from "../utils/auth";
 import { InternalServerError } from "../errors/server-error";
 import { NotAuthorizedError } from "../errors/not-authorized";
 import { RequestConflictError } from "../errors/conflict-error";
@@ -76,7 +76,7 @@ export class ProfileController {
                 throw new NotAuthorizedError("Contraseña Actual Incorrecta")
             }
 
-            user.password = await hashPassword(newPassword);
+            user.password = newPassword;
             await user.save();
 
             res.status(200).json({ message: "Contraseña Actualizada Exitosamente" })
