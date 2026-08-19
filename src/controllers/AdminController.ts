@@ -6,230 +6,293 @@ import { RequestConflictError } from "../errors/conflict-error";
 import { InternalServerError } from "../errors/server-error";
 import { NotFoundError } from "../errors/not-found";
 import { UserEmails } from "../emails/auth";
+import { formatLean } from "../utils";
 
 export class AdminController {
-    // Confirm a user by it's token and generate a new token for creating a password 
-    static confirmUser = async (req: Request, res: Response) => {
-        try {
-            // Validate received token
-            const { token } = req.params;
-            //console.log(token)
+	// Confirm a user by it's token and generate a new token for creating a password
+	static confirmUser = async (req: Request, res: Response) => {
+		try {
+			// Validate received token
+			const { token } = req.params;
+			//console.log(token)
 
-            const tokenRecord = await Token.findOne({ token, type: "admin_confirmation" });
+			const tokenRecord = await Token.findOne({
+				token,
+				type: "admin_confirmation",
+			});
 
-            if (!tokenRecord) {
-                throw new NotFoundError("Token inválido o expirado");
-            }
+			if (!tokenRecord) {
+				throw new NotFoundError("Token inválido o expirado");
+			}
 
-            // Find the user in the DB
-            const user = await User.findById(tokenRecord.userId);
+			// Find the user in the DB
+			const user = await User.findById(tokenRecord.userId);
 
-            // Verify if the user is already confirmed
-            if(user.confirmed) {
-                throw new RequestConflictError("El Usuario ya esta Confirmado")
-            }
+			// Verify if the user is already confirmed
+			if (user.confirmed) {
+				throw new RequestConflictError("El Usuario ya esta Confirmado");
+			}
 
-            // Confirm the user & Delete the token
-            user.confirmed = true;
-            
-            await user.save()
-            await tokenRecord.deleteOne()
+			// Confirm the user & Delete the token
+			user.confirmed = true;
 
-            // Generate new token for creating the password
-            const passwordResetToken = await Token.create({
-                userId: user.id,
-                token: generatePasswordResetToken({ id: user.id }),
-                type: "password_reset"
-            });
+			await user.save();
+			await tokenRecord.deleteOne();
 
-            /** Send set password instructions to user */
-            await  UserEmails.SetPasswordEmail.send({
-                email: user.email,
-                name: user.name,
-                token: passwordResetToken.token
-            });
+			// Generate new token for creating the password
+			const passwordResetToken = await Token.create({
+				userId: user.id,
+				token: generatePasswordResetToken({ id: user.id }),
+				type: "password_reset",
+			});
 
-            res.status(200).json({ message: "Usuario Confirmado y Email enviado para crear contraseña" })
-        } catch (error) {
-            console.log(error)
-            throw new InternalServerError(); 
-        }
-    }
+			/** Send set password instructions to user */
+			await UserEmails.SetPasswordEmail.send({
+				email: user.email,
+				name: user.name,
+				token: passwordResetToken.token,
+			});
 
-    static getConfirmedUsers = async (req: Request, res: Response) => {
-        try {
-            // Get the page and perPage query parameters (default values if not provided)
-            const page = parseInt(req.query.page as string) || 1;
-            const perPage = parseInt(req.query.perPage as string) || 10;
+			res.status(200).json({
+				message:
+					"Usuario Confirmado y Email enviado para crear contraseña",
+			});
+		} catch (error) {
+			console.log(error);
+			throw new InternalServerError();
+		}
+	};
 
-            // Search Filters
-            const searchId = req.query.searchId as string || ""; // Search by personalId or businessId
-            const searchEmail = req.query.searchEmail as string || "";
+	static getConfirmedUsers = async (req: Request, res: Response) => {
+		try {
+			// Get the page and perPage query parameters (default values if not provided)
+			const page = parseInt(req.query.page as string) || 1;
+			const perPage = parseInt(req.query.perPage as string) || 10;
 
-            // Calculate skip and limit for pagination
-            const skip = (page - 1) * perPage;
-            const limit = perPage;
+			// Search Filters
+			const searchId = (req.query.searchId as string) || ""; // Search by personalId or businessId
+			const searchEmail = (req.query.searchEmail as string) || "";
 
-            //TODO: Cover queries with indexes
-            // Build query filter
-            const query : any = { confirmed: true };
+			// Calculate skip and limit for pagination
+			const skip = (page - 1) * perPage;
+			const limit = perPage;
 
-            if (searchId || searchEmail) {
-                query.$or = [];
-                if (searchId) {
-                    query.$or.push(
-                        { personalId: new RegExp(String(req.query.personalId).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i') }, 
-                        { businessId: new RegExp(String(req.query.businessId).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i') }
-                    );
-                }
-                if (searchEmail) query.$or.push({ email: new RegExp(searchEmail, "i") });
-            }
+			//TODO: Cover queries with indexes
+			// Build query filter
+			const query: any = { confirmed: true };
 
-            // Get the total number of confirmed users
-            const totalUsers = await User.countDocuments(query);
+			if (searchId || searchEmail) {
+				query.$or = [];
+				if (searchId) {
+					query.$or.push(
+						{
+							personalId: new RegExp(
+								String(req.query.personalId).replace(
+									/[.*+?^${}()|[\]\\]/g,
+									"\\$&",
+								),
+								"i",
+							),
+						},
+						{
+							businessId: new RegExp(
+								String(req.query.businessId).replace(
+									/[.*+?^${}()|[\]\\]/g,
+									"\\$&",
+								),
+								"i",
+							),
+						},
+					);
+				}
+				if (searchEmail)
+					query.$or.push({ email: new RegExp(searchEmail, "i") });
+			}
 
-            // Fetch the users for the current page with pagination
-            const users = await User.find(query)
-                .skip(skip)
-                .limit(limit)
-                .sort({ createdAt: -1 }); // Sort by createdAt in descending order
+			// Get the total number of confirmed users
+			const totalUsers = await User.countDocuments(query);
 
-            // Calculate the total number of pages
-            const totalPages = Math.ceil(totalUsers / perPage);
-            
-            res.status(200).json({ users, totalUsers, totalPages });
-        } catch (error) {
-            throw new InternalServerError();
-        }
-    }
+			// Fetch the users for the current page with pagination
+			const users = await User.find(query)
+				.skip(skip)
+				.limit(limit)
+				.sort({ createdAt: -1 })
+				.lean(); // Sort by createdAt in descending order
 
-    static getUnconfirmedUsers = async (req: Request, res: Response) => {
-        try {
-            // Get the page and perPage query parameters (default values if not provided)
-            const page = parseInt(req.query.page as string) || 1;
-            const perPage = parseInt(req.query.perPage as string) || 10;
+			// Calculate the total number of pages
+			const totalPages = Math.ceil(totalUsers / perPage);
 
-            // Search Filters
-            const searchId = req.query.searchId as string || ""; // Search by personalId or businessId
-            const searchEmail = req.query.searchEmail as string || "";
+			res.status(200).json({
+				users: users.map(formatLean),
+				totalUsers,
+				totalPages,
+			});
+		} catch (error) {
+			throw new InternalServerError();
+		}
+	};
 
-            // Calculate skip and limit for pagination
-            const skip = (page - 1) * perPage;
-            const limit = perPage;
+	static getUnconfirmedUsers = async (req: Request, res: Response) => {
+		try {
+			// Get the page and perPage query parameters (default values if not provided)
+			const page = parseInt(req.query.page as string) || 1;
+			const perPage = parseInt(req.query.perPage as string) || 10;
 
-            // Build query filter
-            const query : any = { confirmed: false };
+			// Search Filters
+			const searchId = (req.query.searchId as string) || ""; // Search by personalId or businessId
+			const searchEmail = (req.query.searchEmail as string) || "";
 
-            if (searchId || searchEmail) {
-                query.$or = [];
-                if (searchId) {
-                    query.$or.push(
-                        { personalId: new RegExp(String(req.query.personalId).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i') }, 
-                        { businessId: new RegExp(String(req.query.businessId).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i') }
-                    );
-                }
-                if (searchEmail) query.$or.push({ email: new RegExp(searchEmail, "i") });
-            }
+			// Calculate skip and limit for pagination
+			const skip = (page - 1) * perPage;
+			const limit = perPage;
 
-            // Get the total number of unconfirmed users
-            const totalUsers = await User.countDocuments(query);
+			// Build query filter
+			const query: any = { confirmed: false };
 
-            // Fetch the users for the current page with pagination
-            const users = await User.find(query) 
-                .skip(skip)
-                .limit(limit)
-                .sort({ createdAt: -1, passwordSet: 1,  }); // Sort by createdAt in descending order
+			if (searchId || searchEmail) {
+				query.$or = [];
+				if (searchId) {
+					query.$or.push(
+						{
+							personalId: new RegExp(
+								String(req.query.personalId).replace(
+									/[.*+?^${}()|[\]\\]/g,
+									"\\$&",
+								),
+								"i",
+							),
+						},
+						{
+							businessId: new RegExp(
+								String(req.query.businessId).replace(
+									/[.*+?^${}()|[\]\\]/g,
+									"\\$&",
+								),
+								"i",
+							),
+						},
+					);
+				}
+				if (searchEmail)
+					query.$or.push({ email: new RegExp(searchEmail, "i") });
+			}
 
-            // Calculate the total number of pages
-            const totalPages = Math.ceil(totalUsers / perPage);
+			// Get the total number of unconfirmed users
+			const totalUsers = await User.countDocuments(query);
 
-            res.status(200).json({users, totalUsers, totalPages, searchId, searchEmail});
-        } catch (error) {
-            throw new InternalServerError(); 
-        }
-    }
+			// Fetch the users for the current page with pagination
+			const users = await User.find(query)
+				.skip(skip)
+				.limit(limit)
+				.sort({ createdAt: -1, passwordSet: 1 })
+				.lean(); // Sort by createdAt in descending order
 
-    // Get a user by it's mongoDB ID
-    static getUserById = async (req: Request, res: Response) => {
-        try {
-            const { id } = req.params; 
+			// Calculate the total number of pages
+			const totalPages = Math.ceil(totalUsers / perPage);
 
-            const user = req.user
+			res.status(200).json({
+				users: users.map(formatLean),
+				totalUsers,
+				totalPages,
+				searchId,
+				searchEmail,
+			});
+		} catch (error) {
+			throw new InternalServerError();
+		}
+	};
 
-            if(!user.confirmed) {
-                const { token } = await Token.findOne({ userId: id, type: "admin_confirmation" });
-            
-                if(!token) {
-                    throw new RequestConflictError("El Token del usuario a expirado.")
-                }
+	// Get a user by it's mongoDB ID
+	static getUserById = async (req: Request, res: Response) => {
+		try {
+			const { id } = req.params;
 
-                res.status(200).json({ user, token });
-                return
-            }
-    
-            res.status(200).json({ user });
-        } catch (error) {
-            throw new InternalServerError(); 
-        }
-    };
+			const user = req.user;
 
-    // Get user by personal ID
-    static getUserByIdentification = async (req: Request, res: Response) => {
-        const { identificationId } = req.params;
+			if (!user.confirmed) {
+				const { token } = await Token.findOne({
+					userId: id,
+					type: "admin_confirmation",
+				});
 
-        const user = await User.findOne({ personalId: identificationId });
-        if (!user){
-            throw new NotFoundError("Usuario no Encontrado")
-        }
+				if (!token) {
+					throw new RequestConflictError(
+						"El Token del usuario a expirado.",
+					);
+				}
 
-        res.status(200).json( user );
-        return 
-    };
+				res.status(200).json({ user, token });
+				return;
+			}
 
-    // Get the current authenticated user
-    static getAuthenticatedUser = async (req: Request, res: Response) => {
-        const user = req.user;
+			res.status(200).json({ user: formatLean(user) });
+		} catch (error) {
+			throw new InternalServerError();
+		}
+	};
 
-        res.status(200).json( user );
-    }
+	// Get user by personal ID
+	static getUserByIdentification = async (req: Request, res: Response) => {
+		const { identificationId } = req.params;
 
-    // Assign a discount to a user | discount is a number between 0 and 100 (validated earlier)
-    static updateUserDiscount = async (req: Request, res: Response) => {
-        const user = req.user;
-        //console.log(user)
+		const user = await User.findOne({ personalId: identificationId });
+		if (!user) {
+			throw new NotFoundError("Usuario no Encontrado");
+		}
 
-        user.discount = req.body.discount
-        await user.save(); 
+		res.status(200).json(formatLean(user));
+		return;
+	};
 
-        res.status(200).json({ message: "Descuento Asignado Exitosamente"});
-    }
+	// Get the current authenticated user
+	static getAuthenticatedUser = async (req: Request, res: Response) => {
+		const user = req.user;
 
-    static updateUserStatus = async (req: Request, res: Response) => {
-        const user = req.user;
-        //console.log(user)
+		res.status(200).json(formatLean(user.toObject()));
+	};
 
-        if(user.confirmed) {
-            user.confirmed = false;
-            await user.save();
-            res.status(200).json({ message: "Usuario Bloqueado Exitosamente" });
-        } else {
-            user.confirmed = true;
-            await user.save();
-            res.status(200).json({ message: "Usuario Desbloqueado Exitosamente" });
-        }
-    }
+	// Assign a discount to a user | discount is a number between 0 and 100 (validated earlier)
+	static updateUserDiscount = async (req: Request, res: Response) => {
+		const user = req.user;
+		//console.log(user)
 
-    static deleteUser = async (req: Request, res: Response) => {
-        const user = req.user; 
+		user.discount = req.body.discount;
+		await user.save();
 
-        if(user.passwordSet) {
-            throw new RequestConflictError("No se puede eliminar un usuario con una contraseña establecida, puedes bloquearlo o desbloquearlo.")
-        } else {
-            await user.deleteOne();
-            await Token.deleteMany({ userId: user.id });
-            
-            res.status(200).json({ message: "Usuario Eliminado Exitosamente" });
-            return
-        }
-    }
+		res.status(200).json({ message: "Descuento Asignado Exitosamente" });
+	};
+
+	static updateUserStatus = async (req: Request, res: Response) => {
+		const user = req.user;
+		//console.log(user)
+
+		if (user.confirmed) {
+			user.confirmed = false;
+			await user.save();
+
+			res.status(200).json({ message: "Usuario Bloqueado Exitosamente" });
+		} else {
+			user.confirmed = true;
+			await user.save();
+
+			res.status(200).json({
+				message: "Usuario Desbloqueado Exitosamente",
+			});
+		}
+	};
+
+	static deleteUser = async (req: Request, res: Response) => {
+		const user = req.user;
+
+		if (user.passwordSet) {
+			throw new RequestConflictError(
+				"No se puede eliminar un usuario con una contraseña establecida, puedes bloquearlo o desbloquearlo.",
+			);
+		} else {
+			await user.deleteOne();
+			await Token.deleteMany({ userId: user.id });
+
+			res.status(200).json({ message: "Usuario Eliminado Exitosamente" });
+		}
+	};
 }

@@ -1,181 +1,207 @@
 import mongoose, { Schema, Document, Model, Types } from "mongoose";
 import { UserInterface } from "./User";
+import toJSON from "../utils/json";
 
 export enum OrderStatus {
-    Pending = "Pendiente",
-    Sent = "En Transito", 
-    Delivered = "Entregado", 
-    Cancelled = "Cancelado"
-}; 
+	Pending = "Pendiente",
+	Sent = "En Transito",
+	Delivered = "Entregado",
+	Cancelled = "Cancelado",
+}
+
+export enum Currencies {
+	PEN = "PEN",
+	CLP = "CLP",
+}
 
 interface OrderItem {
-    sku: string; 
-    name: string; 
-    price: number; 
-    quantity: number; 
-    lineTotal: number; // lineTotal = price * quantity
+	sku: string;
+	name: string;
+	price: number;
+	quantity: number;
+	lineTotal: number; // lineTotal = price * quantity
 }
 
 // Document interface = what exists after saving in Mongo
 // An interface that describes the properties that a Order Document has
 export interface OrderInterface extends Document {
-    //! Products
-    items: OrderItem[];
-    
-    payment: string
+	//! Products
+	items: OrderItem[];
+	paymentMethod: string; // Payment method, visa, mastercard, etc...
 
-    // DHL, FedEx or any courier provides a tracking number for the order
-    trackingNumber: string
-    shipper: string
+	trackingNumber: string; // tracking number for the order provided by the courier
+	shipper: string; // DHL, FexEx, etc...
 
-    status: string
-    country: string
+	status: OrderStatus;
+	country: string;
 
-    total: number
+	purchaseOrderNumber?: string;
+	currency: Currencies;
+	total: number; // Either in peruvian coin (PEN) or chilean (CLP)
 
-    // Using populate will get other user data
-    // Either though businessId & businessName is redundant here since we got the userId, 
-    // it can serve a searching purpose when trying to find all registered orders by
-    // a business, reducing the complexity of the query.
-    businessName: string
-    businessId: string
-    user: Types.ObjectId | UserInterface; 
+	// Using populate will get other user data
+	// Either though businessId & businessName is redundant here since we got the userId,
+	// it can serve a searching purpose when trying to find all registered orders by
+	// a business, reducing the complexity of the query.
+	businessName: string;
+	businessId: string;
+	user: Types.ObjectId | UserInterface;
 
-    //TODO: General Business Data
+	//TODO: General Business Data
 
-    // Estimated delivery
-    estimatedDelivery: Date; // Required for order creation
-    deliveredAt: Date; // Not Required, can be set by the admin later
+	// Estimated delivery
+	estimatedDelivery: Date; // Required for order creation
+	deliveredAt: Date; // Not Required, can be set by the admin later
 
-    // ordering date
-    createdAt: Date; 
-    updatedAt: Date; 
+	// ordering date
+	createdAt: Date;
+	updatedAt: Date;
 }
 
 // Attributes interface = what you must provide to create a order
 export interface OrderAttrs {
-    items: OrderItem[]
-    payment: string
-    trackingNumber: string
-    shipper: string 
-    status?: OrderStatus
-    country: string 
-    total: number 
+	items: OrderItem[];
+	paymentMethod: string;
+	trackingNumber: string;
+	purchaseOrderNumber?: string;
+	shipper: string;
+	status?: OrderStatus;
+	country: string;
 
-    businessName: string 
-    businessId: string
-    user: Types.ObjectId | UserInterface
+	currency: Currencies;
+	total: number;
 
-    estimatedDelivery: Date; 
-    deliveredAt?: Date; 
+	businessName: string;
+	businessId: string;
+	user: Types.ObjectId | UserInterface;
+
+	estimatedDelivery: Date;
+	deliveredAt?: Date;
 }
 
 // Model interface = adds a build method that uses OrderAttrs
 // An interface that describes the properties that are required to create a new Order
 export interface OrderModel extends Model<OrderInterface> {
-    build(attrs: OrderAttrs): OrderInterface;
+	build(attrs: OrderAttrs): OrderInterface;
 }
 
 // Define the Order document Schema
-const orderSchema : Schema = new Schema(
-    {
-        items: [{
-            sku: {
-                type: String,
-                required: true,
-                trim: true
-            },
-            name: {
-                type: String,
-                required: true,
-                trim: true
-            },
-            price: {
-                type: Number,
-                required: true,
-                min: 0
-            },
-            quantity: {
-                type: Number,
-                required: true,
-                min: 1
-            },
-            lineTotal: {
-                type: Number,
-                required: true,
-                min: 0
-            }
-        }], 
-        payment: {
-            type: String, 
-            required: true, 
-            trim: true
-        },
-        trackingNumber: {
-            type: String, 
-            required: true, 
-            trim: true
-        },
-        shipper: {
-            type: String, 
-            required: true, 
-            trim: true
-        },
-        status: {
-            type: String,
-            enum: Object.values(OrderStatus),
-            default: OrderStatus.Pending,
-            required: true, 
-            trim: true
-        }, 
-        country: {
-            type: String, 
-            required: true, 
-            trim: true
-        }, 
-        total: {
-            type: Number, 
-            required: true, 
-            trim: true
-        },
-        businessName: {
-            type: String, 
-            required: true, 
-            trim: true
-        },
-        businessId: {
-            type: String, 
-            required: true, 
-            trim: true
-        },
-        user: {
-            type: Schema.Types.ObjectId, 
-            required: true, 
-            ref: "User"
-        }, 
-        estimatedDelivery: {
-            type: Date, 
-            required: true, 
-        }, 
-        deliveredAt: {
-            type: Date, 
-            required: false, 
-            default: null
-        }
-    }, 
-    {
-        timestamps: true,
-    }
+const orderSchema: Schema = new Schema<OrderInterface>(
+	{
+		//^ Items
+		items: [
+			{
+				sku: {
+					type: String,
+					required: true,
+					trim: true,
+				},
+				name: {
+					type: String,
+					required: true,
+					trim: true,
+				},
+				price: {
+					type: Number,
+					required: true,
+					min: 0,
+				},
+				quantity: {
+					type: Number,
+					required: true,
+					min: 1,
+				},
+				lineTotal: {
+					type: Number,
+					required: true,
+					min: 0,
+				},
+			},
+		],
+		paymentMethod: {
+			type: String,
+			required: true,
+			trim: true,
+		},
+		currency: {
+			type: String,
+			enum: Object.values(Currencies),
+			required: true,
+			trim: true,
+		},
+		purchaseOrderNumber: {
+			type: String,
+			required: false,
+			trim: true,
+		},
+		trackingNumber: {
+			type: String,
+			required: true,
+			trim: true,
+		},
+		shipper: {
+			type: String,
+			required: true,
+			trim: true,
+		},
+		status: {
+			type: String,
+			enum: Object.values(OrderStatus),
+			default: OrderStatus.Pending,
+			required: true,
+			trim: true,
+		},
+		country: {
+			type: String,
+			required: true,
+			trim: true,
+		},
+		total: {
+			type: Number,
+			required: true,
+			trim: true,
+		},
+		businessName: {
+			type: String,
+			required: true,
+			trim: true,
+		},
+		businessId: {
+			type: String,
+			required: true,
+			trim: true,
+		},
+		user: {
+			type: Schema.Types.ObjectId,
+			required: true,
+			ref: "User",
+		},
+		estimatedDelivery: {
+			type: Date,
+			required: true,
+		},
+		deliveredAt: {
+			type: Date,
+			required: false,
+			default: null,
+		},
+	},
+	{
+		timestamps: true,
+	},
 );
 
-orderSchema.index({ createdAt: -1 }); 
+//? JSON formatting function
+toJSON(orderSchema);
+
+orderSchema.index({ createdAt: -1 });
 
 // Add  custom static "build" method
 orderSchema.statics.build = (attrs: OrderAttrs) => {
-    return new Order(attrs);
-}
+	return new Order(attrs);
+};
 
 // Now when we call the Order constructor it already has typescript validation
-const Order = mongoose.model<OrderInterface, OrderModel>('Order', orderSchema)
+const Order = mongoose.model<OrderInterface, OrderModel>("Order", orderSchema);
 
-export default Order
+export default Order;

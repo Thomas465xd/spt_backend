@@ -1,36 +1,36 @@
-import mongoose, { Schema, Document, Types } from 'mongoose';
+import mongoose, { Schema, Document, Types } from "mongoose";
 
 export interface TokenInterface extends Document {
-    userId: Types.ObjectId
-    token: string
-    type: string
-    createdAt: Date
+	userId: Types.ObjectId;
+	token: string;
+	type: string;
+	createdAt: Date;
 }
 
-const tokenSchema : Schema = new Schema({
-    userId: {
-        type: Schema.Types.ObjectId,
-        ref: "User",
-        required: true
-    },
-    token: {
-        type: String, 
-        required: true
-    },
-    type: {
-        type: String, 
-        enum: ["admin_confirmation", "password_reset"],
-        default: "admin_confirmation",
-        required: true
-    },
-    createdAt: {
-        type: Date,
-        default: Date.now,
-        expires: "7d"
-    }
-})
+const tokenSchema: Schema = new Schema({
+	userId: {
+		type: Schema.Types.ObjectId,
+		ref: "User",
+		required: true,
+	},
+	token: {
+		type: String,
+		required: true,
+	},
+	type: {
+		type: String,
+		enum: ["admin_confirmation", "password_reset"],
+		default: "admin_confirmation",
+		required: true,
+	},
+	createdAt: {
+		type: Date,
+		default: Date.now,
+		expires: "7d",
+	},
+});
 
-tokenSchema.index({ token: 1, type: 1 })
+tokenSchema.index({ token: 1, type: 1 });
 
 const Token = mongoose.model<TokenInterface>("Token", tokenSchema);
 

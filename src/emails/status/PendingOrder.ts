@@ -1,266 +1,204 @@
+import { formatCurrency, formatDate } from "@/utils";
 import resend from "../../config/resend";
 import { InternalServerError } from "../../errors/server-error";
 import { OrderInterface } from "../../models/Order";
 import { UserInterface } from "../../models/User";
 
 export class PendingOrderEmail {
-    static sendPendingOrderEmail = async (user: UserInterface, order: OrderInterface) => { 
-        try {
-            // Format price helper
-            const formatPrice = (amount: number) => {
-                return new Intl.NumberFormat('es-CL', {
-                    style: 'currency',
-                    currency: 'CLP'
-                }).format(amount);
-            };
-
-            // Format date helper
-            const formatDate = (date: Date) => {
-                return new Date(date).toLocaleDateString('es-CL', {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric'
-                });
-            };
-
-            // Generate items HTML
-            const itemsHTML = order.items.map(item => `
+	static sendPendingOrderEmail = async (
+		user: UserInterface,
+		order: OrderInterface,
+	) => {
+		try {
+			const itemsHTML = order.items
+				.map(
+					(item) => `
                 <tr>
-                    <td style="padding: 12px; border-bottom: 1px solid #f1f1f1;">
-                        <div style="font-weight: 600; color: #1a1a1a; margin-bottom: 4px;">${item.name}</div>
-                        <div style="font-size: 13px; color: #666;">SKU: ${item.sku}</div>
+                    <td style="padding: 12px 16px; border-bottom: 1px solid #f1f5f9;">
+                        <div style="font-weight: 600; color: #1e293b; margin-bottom: 3px;">${item.name}</div>
+                        <div style="font-size: 12px; color: #94a3b8;">SKU: ${item.sku}</div>
                     </td>
-                    <td style="padding: 12px; border-bottom: 1px solid #f1f1f1; text-align: center; color: #1a1a1a;">
-                        ${item.quantity}
-                    </td>
-                    <td style="padding: 12px; border-bottom: 1px solid #f1f1f1; text-align: right; color: #1a1a1a;">
-                        ${formatPrice(item.price)}
-                    </td>
-                    <td style="padding: 12px; border-bottom: 1px solid #f1f1f1; text-align: right; font-weight: 600; color: #ff6600;">
-                        ${formatPrice(item.lineTotal)}
-                    </td>
-                </tr>
-            `).join('');
+                    <td style="padding: 12px 16px; border-bottom: 1px solid #f1f5f9; text-align: center; color: #1e293b;">${item.quantity}</td>
+                    <td style="padding: 12px 16px; border-bottom: 1px solid #f1f5f9; text-align: right; color: #475569;">${formatCurrency(item.price, order.currency)}</td>
+                    <td style="padding: 12px 16px; border-bottom: 1px solid #f1f5f9; text-align: right; font-weight: 600; color: #ea580c;">${formatCurrency(item.lineTotal, order.currency)}</td>
+                </tr>`,
+				)
+				.join("");
 
-            const emailHTML = `
+			const emailHTML = `
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Orden Registrada - SPT</title>
+    <title>Orden Registrada - Portal SPT</title>
 </head>
-<body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f5f5f5;">
-    <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f5f5f5; padding: 40px 20px;">
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f1f5f9;">
+    <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f1f5f9;">
         <tr>
-            <td align="center">
-                <!-- Main Container -->
-                <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
-                    
-                    <!-- Header with Orange Background -->
+            <td style="padding: 40px 20px;">
+                <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+
+                    <!-- Header -->
                     <tr>
-                        <td style="background: linear-gradient(135deg, #ff6600 0%, #ff8533 100%); padding: 40px 30px; text-align: center;">
-                            <div style="background-color: #ffffff; display: inline-block; padding: 15px 25px; border-radius: 50px; margin-bottom: 20px;">
-                                <h1 style="margin: 0; color: #ff6600; font-size: 28px; font-weight: bold;">SPT</h1>
-                                <p style="margin: 0; color: #666; font-size: 12px; letter-spacing: 1px;">SPARE PARTS TRADE</p>
-                            </div>
-                            <h2 style="margin: 0; color: #ffffff; font-size: 32px; font-weight: bold;">¡Orden Registrada! 🎉</h2>
-                            <p style="margin: 10px 0 0 0; color: #fff; font-size: 16px; opacity: 0.95;">Tu pedido ha sido recibido correctamente</p>
+                        <td style="background: linear-gradient(135deg, #ea580c 0%, #fb923c 100%); padding: 40px 20px; text-align: center;">
+                            <img src="${process.env.LOGO_URL}" alt="Portal SPT" style="width: 70px; height: auto; display: block; margin: 0 auto 16px;" />
+                            <h1 style="margin: 0; font-size: 26px; font-weight: 700; color: #ffffff;">¡Orden Registrada! 🎉</h1>
+                            <p style="margin: 8px 0 0 0; font-size: 15px; color: rgba(255,255,255,0.9);">Tu pedido ha sido recibido correctamente</p>
                         </td>
                     </tr>
 
-                    <!-- Welcome Message -->
+                    <!-- Content -->
                     <tr>
-                        <td style="padding: 30px 30px 20px 30px;">
-                            <p style="margin: 0 0 20px 0; color: #1a1a1a; font-size: 16px; line-height: 1.6;">
-                                Hola <strong style="color: #ff6600;">${user.name}</strong>,
+                        <td style="padding: 40px 35px; background-color: #ffffff;">
+                            <p style="margin: 0 0 20px 0; font-size: 16px; line-height: 1.6; color: #1e293b;">
+                                Hola <strong>${user.name}</strong>,
                             </p>
-                            <p style="margin: 0; color: #666; font-size: 15px; line-height: 1.6;">
+                            <p style="margin: 0 0 25px 0; font-size: 15px; line-height: 1.7; color: #475569;">
                                 Hemos registrado exitosamente tu orden. A continuación encontrarás todos los detalles de tu pedido.
                             </p>
-                        </td>
-                    </tr>
 
-                    <!-- Order Details Card -->
-                    <tr>
-                        <td style="padding: 0 30px 30px 30px;">
-                            <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #fff5eb; border-radius: 8px; border-left: 4px solid #ff6600;">
+                            <!-- Order Details -->
+                            <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="margin: 0 0 30px 0; background-color: #f8fafc; border-radius: 10px; overflow: hidden;">
                                 <tr>
-                                    <td style="padding: 20px;">
-                                        <table width="100%" cellpadding="8" cellspacing="0">
+                                    <td style="padding: 18px 25px; border-bottom: 2px solid #e2e8f0;">
+                                        <h2 style="margin: 0; font-size: 17px; font-weight: 600; color: #1e293b;">📋 Detalles de la Orden</h2>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 20px 25px;">
+                                        <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
                                             <tr>
-                                                <td style="color: #666; font-size: 14px;">ID de Orden:</td>
-                                                <td style="color: #1a1a1a; font-weight: 600; font-size: 14px; text-align: right; font-family: monospace;">
-                                                    #${order._id.toString().slice(-8).toUpperCase()}
+                                                <td style="padding: 7px 0; font-size: 14px; color: #64748b; width: 50%;">ID de Orden:</td>
+                                                <td style="padding: 7px 0; font-size: 14px; font-weight: 600; color: #1e293b; text-align: right; font-family: monospace;">#${order._id.toString().slice(-8).toUpperCase()}</td>
+                                            </tr>
+                                            <tr>
+                                                <td style="padding: 7px 0; font-size: 14px; color: #64748b;">Fecha de Registro:</td>
+                                                <td style="padding: 7px 0; font-size: 14px; font-weight: 600; color: #1e293b; text-align: right;">${formatDate(order.createdAt, order.country)}</td>
+                                            </tr>
+                                            <tr>
+                                                <td style="padding: 7px 0; font-size: 14px; color: #64748b;">Estado:</td>
+                                                <td style="padding: 7px 0; text-align: right;">
+                                                    <span style="background-color: #fef3c7; color: #92400e; padding: 4px 12px; border-radius: 20px; font-size: 13px; font-weight: 600;">⏳ Pendiente</span>
                                                 </td>
                                             </tr>
                                             <tr>
-                                                <td style="color: #666; font-size: 14px;">Fecha de Registro:</td>
-                                                <td style="color: #1a1a1a; font-weight: 600; font-size: 14px; text-align: right;">
-                                                    ${formatDate(order.createdAt)}
-                                                </td>
+                                                <td style="padding: 7px 0; font-size: 14px; color: #64748b;">Método de Pago:</td>
+                                                <td style="padding: 7px 0; font-size: 14px; font-weight: 600; color: #1e293b; text-align: right;">${order.paymentMethod}</td>
                                             </tr>
                                             <tr>
-                                                <td style="color: #666; font-size: 14px;">Estado:</td>
-                                                <td style="text-align: right;">
-                                                    <span style="background-color: #fff3cd; color: #856404; padding: 6px 12px; border-radius: 20px; font-size: 13px; font-weight: 600; display: inline-block;">
-                                                        ⏳ Pendiente
-                                                    </span>
-                                                </td>
+                                                <td style="padding: 7px 0; font-size: 14px; color: #64748b;">Expedidor:</td>
+                                                <td style="padding: 7px 0; font-size: 14px; font-weight: 600; color: #1e293b; text-align: right;">${order.shipper}</td>
                                             </tr>
                                             <tr>
-                                                <td style="color: #666; font-size: 14px;">Método de Pago:</td>
-                                                <td style="color: #1a1a1a; font-weight: 600; font-size: 14px; text-align: right;">
-                                                    ${order.payment}
-                                                </td>
+                                                <td style="padding: 7px 0; font-size: 14px; color: #64748b;">Tracking Number:</td>
+                                                <td style="padding: 7px 0; font-size: 14px; font-weight: 600; color: #ea580c; text-align: right; font-family: monospace;">${order.trackingNumber}</td>
                                             </tr>
                                             <tr>
-                                                <td style="color: #666; font-size: 14px;">Expedidor:</td>
-                                                <td style="color: #1a1a1a; font-weight: 600; font-size: 14px; text-align: right;">
-                                                    ${order.shipper}
-                                                </td>
-                                            </tr>
-                                            <tr>
-                                                <td style="color: #666; font-size: 14px;">Tracking Number:</td>
-                                                <td style="color: #ff6600; font-weight: 600; font-size: 14px; text-align: right; font-family: monospace;">
-                                                    ${order.trackingNumber}
-                                                </td>
-                                            </tr>
-                                            <tr>
-                                                <td style="color: #666; font-size: 14px;">Entrega Estimada:</td>
-                                                <td style="color: #1a1a1a; font-weight: 600; font-size: 14px; text-align: right;">
-                                                    ${formatDate(order.estimatedDelivery)}
-                                                </td>
+                                                <td style="padding: 7px 0; font-size: 14px; color: #64748b;">Entrega Estimada:</td>
+                                                <td style="padding: 7px 0; font-size: 14px; font-weight: 600; color: #1e293b; text-align: right;">${formatDate(order.estimatedDelivery, order.country)}</td>
                                             </tr>
                                         </table>
                                     </td>
                                 </tr>
                             </table>
-                        </td>
-                    </tr>
 
-                    <!-- Products Section -->
-                    <tr>
-                        <td style="padding: 0 30px 30px 30px;">
-                            <h3 style="margin: 0 0 20px 0; color: #1a1a1a; font-size: 20px; border-bottom: 2px solid #ff6600; padding-bottom: 10px;">
-                                📦 Productos de tu Orden
-                            </h3>
-                            <table width="100%" cellpadding="0" cellspacing="0" style="border: 1px solid #e5e5e5; border-radius: 8px; overflow: hidden;">
-                                <thead>
-                                    <tr style="background-color: #ff6600;">
-                                        <th style="padding: 12px; text-align: left; color: #ffffff; font-size: 14px; font-weight: 600;">Producto</th>
-                                        <th style="padding: 12px; text-align: center; color: #ffffff; font-size: 14px; font-weight: 600;">Cant.</th>
-                                        <th style="padding: 12px; text-align: right; color: #ffffff; font-size: 14px; font-weight: 600;">Precio Unit.</th>
-                                        <th style="padding: 12px; text-align: right; color: #ffffff; font-size: 14px; font-weight: 600;">Subtotal</th>
-                                    </tr>
-                                </thead>
-                                <tbody style="background-color: #ffffff;">
-                                    ${itemsHTML}
-                                </tbody>
-                                <tfoot>
-                                    <tr style="background-color: #fff5eb;">
-                                        <td colspan="3" style="padding: 16px; text-align: right; font-size: 18px; font-weight: bold; color: #1a1a1a;">
-                                            Total:
-                                        </td>
-                                        <td style="padding: 16px; text-align: right; font-size: 20px; font-weight: bold; color: #ff6600;">
-                                            ${formatPrice(order.total)}
-                                        </td>
-                                    </tr>
-                                </tfoot>
+                            <!-- Items Table -->
+                            <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="margin: 0 0 30px 0; border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden;">
+                                <tr>
+                                    <td style="padding: 18px 25px; border-bottom: 2px solid #e2e8f0; background-color: #f8fafc;">
+                                        <h2 style="margin: 0; font-size: 17px; font-weight: 600; color: #1e293b;">📦 Artículos de la Orden (${order.items.length})</h2>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
+                                            <thead>
+                                                <tr style="background: linear-gradient(135deg, #ea580c 0%, #fb923c 100%);">
+                                                    <th style="padding: 10px 16px; text-align: left; color: #ffffff; font-size: 13px; font-weight: 600;">Producto</th>
+                                                    <th style="padding: 10px 16px; text-align: center; color: #ffffff; font-size: 13px; font-weight: 600;">Cant.</th>
+                                                    <th style="padding: 10px 16px; text-align: right; color: #ffffff; font-size: 13px; font-weight: 600;">Precio</th>
+                                                    <th style="padding: 10px 16px; text-align: right; color: #ffffff; font-size: 13px; font-weight: 600;">Subtotal</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>${itemsHTML}</tbody>
+                                            <tfoot>
+                                                <tr>
+                                                    <td colspan="3" style="padding: 16px; text-align: right; font-size: 16px; font-weight: 700; color: #1e293b; border-top: 2px solid #e2e8f0;">Total:</td>
+                                                    <td style="padding: 16px; text-align: right; font-size: 18px; font-weight: 700; color: #ea580c; border-top: 2px solid #e2e8f0;">${formatCurrency(order.total, order.currency)}</td>
+                                                </tr>
+                                            </tfoot>
+                                        </table>
+                                    </td>
+                                </tr>
                             </table>
-                        </td>
-                    </tr>
 
-                    <!-- Shipping Information -->
-                    <tr>
-                        <td style="padding: 0 30px 30px 30px;">
-                            <div style="background-color: #f8f9fa; border-radius: 8px; padding: 20px; border-left: 4px solid #ff6600;">
-                                <h4 style="margin: 0 0 15px 0; color: #1a1a1a; font-size: 16px;">📍 Información de Envío</h4>
-                                <table width="100%" cellpadding="5" cellspacing="0">
-                                    <tr>
-                                        <td style="color: #666; font-size: 14px; width: 40%;">Empresa:</td>
-                                        <td style="color: #1a1a1a; font-size: 14px; font-weight: 600;">${order.businessName}</td>
-                                    </tr>
-                                    <tr>
-                                        <td style="color: #666; font-size: 14px;">ID Empresa:</td>
-                                        <td style="color: #1a1a1a; font-size: 14px; font-weight: 600;">${order.businessId}</td>
-                                    </tr>
-                                    <tr>
-                                        <td style="color: #666; font-size: 14px;">Dirección:</td>
-                                        <td style="color: #1a1a1a; font-size: 14px; font-weight: 600;">${user.address}</td>
-                                    </tr>
-                                    <tr>
-                                        <td style="color: #666; font-size: 14px;">Ciudad/Comuna:</td>
-                                        <td style="color: #1a1a1a; font-size: 14px; font-weight: 600;">${user.city}, ${user.province}</td>
-                                    </tr>
-                                    <tr>
-                                        <td style="color: #666; font-size: 14px;">País:</td>
-                                        <td style="color: #1a1a1a; font-size: 14px; font-weight: 600;">${order.country}</td>
-                                    </tr>
-                                </table>
-                            </div>
-                        </td>
-                    </tr>
+                            <!-- Shipping Info -->
+                            <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="margin: 0 0 30px 0; background-color: #fff7ed; border-left: 4px solid #ea580c; border-radius: 6px;">
+                                <tr>
+                                    <td style="padding: 20px 25px;">
+                                        <p style="margin: 0 0 12px 0; font-size: 15px; font-weight: 600; color: #ea580c;">📍 Información de Envío</p>
+                                        <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
+                                            <tr>
+                                                <td style="padding: 5px 0; font-size: 14px; color: #64748b; width: 40%;">Empresa:</td>
+                                                <td style="padding: 5px 0; font-size: 14px; font-weight: 600; color: #1e293b; text-align: right;">${order.businessName}</td>
+                                            </tr>
+                                            <tr>
+                                                <td style="padding: 5px 0; font-size: 14px; color: #64748b;">Dirección:</td>
+                                                <td style="padding: 5px 0; font-size: 14px; font-weight: 600; color: #1e293b; text-align: right;">${user.address}</td>
+                                            </tr>
+                                            <tr>
+                                                <td style="padding: 5px 0; font-size: 14px; color: #64748b;">Ciudad:</td>
+                                                <td style="padding: 5px 0; font-size: 14px; font-weight: 600; color: #1e293b; text-align: right;">${user.city}, ${user.province}</td>
+                                            </tr>
+                                            <tr>
+                                                <td style="padding: 5px 0; font-size: 14px; color: #64748b;">País:</td>
+                                                <td style="padding: 5px 0; font-size: 14px; font-weight: 600; color: #1e293b; text-align: right;">${order.country}</td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </table>
 
-                    <!-- Action Button -->
-                    <tr>
-                        <td style="padding: 0 30px 30px 30px; text-align: center;">
-                            <a href="${process.env.FRONTEND_URL}/orders?page=1&orderId=${order._id}"
-                               style="display: inline-block; background: linear-gradient(135deg, #ff6600 0%, #ff8533 100%); color: #ffffff; text-decoration: none; padding: 16px 40px; border-radius: 30px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 12px rgba(255, 102, 0, 0.3);">
-                                Ver Orden en el Portal →
-                            </a>
-                        </td>
-                    </tr>
+                            <!-- CTA Button -->
+                            <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
+                                <tr>
+                                    <td style="text-align: center; padding: 10px 0 25px;">
+                                        <a href="${process.env.FRONTEND_URL}/orders?page=1&orderId=${order._id}" style="display: inline-block; padding: 15px 45px; background: linear-gradient(135deg, #ea580c 0%, #fb923c 100%); color: #ffffff; text-decoration: none; font-size: 16px; font-weight: 600; border-radius: 10px;">
+                                            Ver Orden en el Portal
+                                        </a>
+                                    </td>
+                                </tr>
+                            </table>
 
-                    <!-- Next Steps -->
-                    <tr>
-                        <td style="padding: 0 30px 30px 30px;">
-                            <div style="background-color: #fff5eb; border-radius: 8px; padding: 20px;">
-                                <h4 style="margin: 0 0 15px 0; color: #ff6600; font-size: 16px;">🚀 ¿Qué sigue?</h4>
-                                <ul style="margin: 0; padding-left: 20px; color: #666; font-size: 14px; line-height: 1.8;">
-                                    <li>Procesaremos tu orden en las próximas 24-48 horas hábiles</li>
-                                    <li>Recibirás un correo cuando tu orden cambie a "En Tránsito"</li>
-                                    <li>Podrás rastrear tu envío con el tracking number proporcionado</li>
-                                    <li>Te notificaremos cuando tu orden sea entregada</li>
-                                </ul>
-                            </div>
-                        </td>
-                    </tr>
+                            <!-- Next Steps -->
+                            <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="margin: 0 0 25px 0; background-color: #f8fafc; border-left: 4px solid #334155; border-radius: 6px;">
+                                <tr>
+                                    <td style="padding: 16px 20px;">
+                                        <p style="margin: 0 0 8px 0; font-size: 14px; font-weight: 600; color: #1e293b;">🚀 ¿Qué sigue?</p>
+                                        <ul style="margin: 0; padding-left: 18px; color: #475569; font-size: 13px; line-height: 1.9;">
+                                            <li>Procesaremos tu orden en las próximas 24-48 horas hábiles</li>
+                                            <li>Recibirás un correo cuando tu orden cambie de estado</li>
+                                            <li>Podrás rastrear tu envío con el tracking number indicado</li>
+                                        </ul>
+                                    </td>
+                                </tr>
+                            </table>
 
-                    <!-- Support Section -->
-                    <tr>
-                        <td style="padding: 0 30px 30px 30px; text-align: center;">
-                            <p style="margin: 0 0 10px 0; color: #666; font-size: 14px;">
-                                ¿Tienes alguna pregunta sobre tu orden?
-                            </p>
-                            <p style="margin: 0;">
-                                <a href="mailto:${process.env.ADMIN_EMAIL}" style="color: #ff6600; text-decoration: none; font-weight: 600;">
-                                    Contáctanos
-                                </a>
+                            <p style="margin: 0; font-size: 14px; line-height: 1.6; color: #94a3b8; text-align: center;">
+                                ¿Tienes preguntas? Contáctanos en <a href="mailto:${process.env.ADMIN_EMAIL}" style="color: #ea580c; text-decoration: none;">${process.env.ADMIN_EMAIL}</a>
                             </p>
                         </td>
                     </tr>
 
                     <!-- Footer -->
                     <tr>
-                        <td style="background-color: #1a1a1a; padding: 30px; text-align: center;">
-                            <p style="margin: 0 0 10px 0; color: #ffffff; font-size: 16px; font-weight: 600;">
-                                Gracias por confiar en SPT
-                            </p>
-                            <p style="margin: 0 0 15px 0; color: #999; font-size: 13px;">
-                                Spare Parts Trade - Tu proveedor de repuestos de confianza
-                            </p>
-                            <div style="margin: 15px 0;">
-                                <a href="${process.env.FRONTEND_URL}" style="color: #ff6600; text-decoration: none; margin: 0 10px; font-size: 13px;">
-                                    Ir al Portal
-                                </a>
-                                <span style="color: #666;">|</span>
-                                <a href="${process.env.FRONTEND_URL}/orders" style="color: #ff6600; text-decoration: none; margin: 0 10px; font-size: 13px;">
-                                    Ver Ordenes
-                                </a>
-                            </div>
-                            <p style="margin: 20px 0 0 0; color: #666; font-size: 12px;">
-                                © ${new Date().getFullYear()} Spare Parts Trade. Todos los derechos reservados.
+                        <td style="background-color: #1e293b; padding: 30px 35px; text-align: center; border-radius: 0 0 16px 16px;">
+                            <p style="margin: 0 0 6px 0; font-size: 15px; font-weight: 600; color: #ffffff;">Portal SPT</p>
+                            <p style="margin: 0 0 12px 0; font-size: 13px; color: #94a3b8;">Spare Parts Trade - Tu proveedor de repuestos de confianza</p>
+                            <p style="margin: 0; font-size: 11px; color: #64748b;">
+                                Este correo fue enviado a ${user.email}<br/>
+                                © ${new Date().getFullYear()} Portal SPT. Todos los derechos reservados.
                             </p>
                         </td>
                     </tr>
@@ -273,19 +211,19 @@ export class PendingOrderEmail {
 </html>
             `;
 
-            const mailOptions = {
-                from: `"Portal SPT" <${process.env.NOREPLY_EMAIL}>`,
-                to: [user.email], 
-                subject: `🎉📦 Tu Orden ha sido Registrada, ${user.name}`, 
-                html: emailHTML
-            }
+			const mailOptions = {
+				from: `"Portal SPT" <${process.env.NOREPLY_EMAIL}>`,
+				to: [user.email],
+				subject: `🎉 Tu Orden ha sido Registrada, ${user.name}`,
+				html: emailHTML,
+			};
 
-            const response = await resend.emails.send(mailOptions); 
-            console.log("✅ Email sent successfully", user.email);
-            console.log(response)
-        } catch (error) {
-            console.error("❌ Error sending email:", error);
-            throw new InternalServerError(); 
-        }
-    }
+			const response = await resend.emails.send(mailOptions);
+			console.log("✅ Email sent successfully", user.email);
+			console.log(response);
+		} catch (error) {
+			console.error("❌ Error sending email:", error);
+			throw new InternalServerError();
+		}
+	};
 }
