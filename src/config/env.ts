@@ -16,6 +16,7 @@ export const envs = {
 	PORT: env.get("PORT").required().asPortNumber(),
 	DATABASE_URL: env.get("DATABASE_URL").required().asUrlString(),
 	FRONTEND_URL: env.get("FRONTEND_URL").required().asUrlString(),
+	LOGO_URL: env.get("LOGO_URL").required().asUrlString(),
 	ADMIN_EMAIL: env.get("ADMIN_EMAIL").required().asEmailString(),
 	JWT_SECRET: env.get("JWT_SECRET").required().asString(),
 	ADMIN_SECRET: env.get("ADMIN_SECRET").required().asString(),

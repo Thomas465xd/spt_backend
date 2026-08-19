@@ -4,3 +4,4 @@ export * from "./token";
 export * from "./jwt";
 export * from "./validation";
 export * from "./json";
+export * from "./price";
