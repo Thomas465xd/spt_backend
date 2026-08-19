@@ -3,451 +3,548 @@ import { authenticate, authorizeAdmin } from "../middleware/auth";
 import { body, param, query } from "express-validator";
 import { handleInputErrors } from "../middleware/validation";
 import { OrderController } from "../controllers/OrderController";
+import { Currencies } from "../models/Order";
 
 const router = Router();
-
-
 
 //? Order Router CRUD
 
 //* Get Orders | USER
-router.get("/user", 
-    query("status")
-        .optional()
-        .isIn(["Pendiente", "pendiente", "En Transito", "en transito", "Entregado", "entregado", "Cancelado", "cancelado"])
-        .withMessage("Estado inválido"),
-    query("country")
-        .optional()
-        .trim()
-        .isString()
-        .withMessage("El País debe ser un texto válido"),
-    query("orderId")
-        .optional()
-        .isMongoId().withMessage("ID de orden Inválido")
-        .notEmpty().withMessage("El ID de la Orden es Obligatorio"),
-    authenticate, 
-    handleInputErrors,
-    OrderController.getOrdersUser
-)
+router.get(
+	"/user",
+	query("status")
+		.optional()
+		.isIn([
+			"Pendiente",
+			"pendiente",
+			"En Transito",
+			"en transito",
+			"Entregado",
+			"entregado",
+			"Cancelado",
+			"cancelado",
+		])
+		.withMessage("Estado inválido"),
+	query("country")
+		.optional()
+		.trim()
+		.isString()
+		.withMessage("El País debe ser un texto válido"),
+	query("orderId")
+		.optional()
+		.isMongoId()
+		.withMessage("ID de orden Inválido")
+		.notEmpty()
+		.withMessage("El ID de la Orden es Obligatorio"),
+	authenticate,
+	handleInputErrors,
+	OrderController.getOrdersUser,
+);
 
 //* Get Order by ID | USER
-router.get("/user/:orderId", 
-    param("orderId")
-        .isMongoId().withMessage("ID de orden Inválido")
-        .notEmpty().withMessage("El ID de la Orden es Obligatorio"),
-    authenticate, 
-    handleInputErrors, 
-    OrderController.getOrderByIdUser
-)
+router.get(
+	"/user/:orderId",
+	param("orderId")
+		.isMongoId()
+		.withMessage("ID de orden Inválido")
+		.notEmpty()
+		.withMessage("El ID de la Orden es Obligatorio"),
+	authenticate,
+	handleInputErrors,
+	OrderController.getOrderByIdUser,
+);
 
 //* Get Orders | ADMIN
-router.get('/', 
-    query("status")
-        .optional()
-        .isIn(["Pendiente", "pendiente", "En Transito", "en transito", "Entregado", "entregado", "Cancelado", "cancelado"])
-        .withMessage("Estado inválido"),
-    query("country")
-        .optional()
-        .trim()
-        .isString()
-        .withMessage("El País debe ser un texto válido"),
-    query("businessId")
-        .optional()
-        .trim()
-        .notEmpty().withMessage("La identificación de la empresa no puede estar vacía")
-        .isString()
-        .withMessage("La identificación de la empresa debe ser un texto válido"),
-    authenticate, 
-    authorizeAdmin,
-    handleInputErrors,
-    OrderController.getOrdersAdmin
+router.get(
+	"/",
+	query("status")
+		.optional()
+		.isIn([
+			"Pendiente",
+			"pendiente",
+			"En Transito",
+			"en transito",
+			"Entregado",
+			"entregado",
+			"Cancelado",
+			"cancelado",
+		])
+		.withMessage("Estado inválido"),
+	query("country")
+		.optional()
+		.trim()
+		.isString()
+		.withMessage("El País debe ser un texto válido"),
+	query("businessId")
+		.optional()
+		.trim()
+		.notEmpty()
+		.withMessage("La identificación de la empresa no puede estar vacía")
+		.isString()
+		.withMessage(
+			"La identificación de la empresa debe ser un texto válido",
+		),
+	query("orderId")
+		.optional()
+		.isMongoId()
+		.withMessage("ID de orden Inválido")
+		.notEmpty()
+		.withMessage("El ID de la Orden es Obligatorio"),
+	authenticate,
+	authorizeAdmin,
+	handleInputErrors,
+	OrderController.getOrdersAdmin,
 );
 
 //* Get Order by ID | ADMIN
-router.get("/:orderId", 
-    param("orderId")
-        .isMongoId().withMessage("ID de orden Inválido")
-        .notEmpty().withMessage("El ID de la Orden es Obligatorio"),
-    authenticate, 
-    authorizeAdmin, 
-    handleInputErrors, 
-    OrderController.getOrderByIdAdmin
-)
-
+router.get(
+	"/:orderId",
+	param("orderId")
+		.isMongoId()
+		.withMessage("ID de orden Inválido")
+		.notEmpty()
+		.withMessage("El ID de la Orden es Obligatorio"),
+	authenticate,
+	authorizeAdmin,
+	handleInputErrors,
+	OrderController.getOrderByIdAdmin,
+);
 
 //^ Create Order
-router.post("/", 
-    // Validate items array
-    body("items")
-        .isArray({ min: 1 })
-        .withMessage("La orden debe contener al menos un producto"),
-    
-    // Validate each item's SKU
-    body("items.*.sku")
-        .notEmpty()
-        .withMessage("El SKU del producto es obligatorio")
-        .trim()
-        .isString()
-        .withMessage("El SKU debe ser un texto válido"),
-    
-    // Validate each item's name
-    body("items.*.name")
-        .notEmpty()
-        .withMessage("El nombre del producto es obligatorio")
-        .trim()
-        .isString()
-        .withMessage("El nombre debe ser un texto válido"),
-    
-    // Validate each item's price
-    body("items.*.price")
-        .notEmpty()
-        .withMessage("El precio del producto es obligatorio")
-        .isFloat({ min: 0 })
-        .withMessage("El precio debe ser un número mayor o igual a 0"),
-    
-    // Validate each item's quantity
-    body("items.*.quantity")
-        .notEmpty()
-        .withMessage("La cantidad del producto es obligatoria")
-        .isInt({ min: 1 })
-        .withMessage("La cantidad debe ser un número entero mayor a 0"),
-    
-    // Validate each item's lineTotal
-    body("items.*.lineTotal")
-        .notEmpty()
-        .withMessage("El total de línea es obligatorio")
-        .isFloat({ min: 0 })
-        .withMessage("El total de línea debe ser un número mayor o igual a 0")
-        .custom((lineTotal, { req, path }) => {
-            // Extract the index from the path (e.g., "items[0].lineTotal" -> 0)
-            const match = path.match(/items\[(\d+)\]/);
-            if (match) {
-                const index = parseInt(match[1]);
-                const item = req.body.items[index];
-                const calculatedTotal = item.price * item.quantity;
-                
-                // Allow small floating point differences
-                if (Math.abs(lineTotal - calculatedTotal) > 0.01) {
-                    throw new Error(`El total de línea debe ser igual a precio × cantidad (${calculatedTotal.toFixed(2)})`);
-                }
-            }
-            return true;
-        }),
-    
-    // Validate payment
-    body("payment")
-        .notEmpty()
-        .withMessage("El Método de Pago es Obligatorio")
-        .trim()
-        .isString()
-        .withMessage("El método de pago debe ser un texto válido"),
-    
-    // Validate shipper
-    body("shipper")
-        .notEmpty()
-        .withMessage("El Expedidor es Obligatorio")
-        .trim()
-        .isString()
-        .withMessage("El expedidor debe ser un texto válido"),
+router.post(
+	"/",
+	// Validate items array
+	body("items")
+		.isArray({ min: 1 })
+		.withMessage("La orden debe contener al menos un producto"),
 
-    // Validate trackingNumber
-    body("trackingNumber")
-        .notEmpty()
-        .withMessage("El Tracking Number es Obligatorio")
-        .trim()
-        .isString()
-        .withMessage("El Tracking Number debe ser un texto válido"),
+	// Validate each item's SKU
+	body("items.*.sku")
+		.notEmpty()
+		.withMessage("El SKU del producto es obligatorio")
+		.trim()
+		.isString()
+		.withMessage("El SKU debe ser un texto válido"),
 
-    // Validate country
-    body("country")
-        .notEmpty()
-        .withMessage("El País es Obligatorio")
-        .trim()
-        .isString()
-        .withMessage("El país debe ser un texto válido"),
-    
-    // Validate total
-    body("total")
-        .notEmpty()
-        .withMessage("El total de la orden es obligatorio")
-        .isFloat({ min: 0 })
-        .withMessage("El total debe ser un número mayor o igual a 0")
-        .custom((total, { req }) => {
-            // Validate that total matches sum of all lineTotal values
-            const calculatedTotal = req.body.items.reduce(
-                (sum: number, item: any) => sum + (item.lineTotal || 0), 
-                0
-            );
-            
-            // Allow small floating point differences
-            if (Math.abs(total - calculatedTotal) > 0.01) {
-                throw new Error(`El total debe ser igual a la suma de todos los productos (${calculatedTotal.toFixed(2)})`);
-            }
-            return true;
-        }),
-    
-    // Validate user
-    body("user")
-        .notEmpty()
-        .withMessage("El ID de usuario es obligatorio")
-        .isMongoId()
-        .withMessage("El ID de usuario no es válido"),
+	// Validate each item's name
+	body("items.*.name")
+		.notEmpty()
+		.withMessage("El nombre del producto es obligatorio")
+		.trim()
+		.isString()
+		.withMessage("El nombre debe ser un texto válido"),
 
-    body("businessName")
-        .notEmpty()
-        .withMessage("El Nombre de la Empresa es Obligatorio"),
-    body("businessId")
-        .notEmpty().withMessage("La identificación de la empresa es obligatoria")
-        .isString()
-        .withMessage("La identificación de la empresa debe ser un texto válido"),
-    body("estimatedDelivery")
-        .notEmpty()
-        .withMessage("La Fecha de Entrega Estimada es Obligatoria")
-        .isISO8601()
-        .withMessage("La Fecha de Entrega Estimada debe ser una fecha válida")
-        .toDate()
-        .custom((value) => {
-            const today = new Date();
-            today.setHours(0, 0, 0, 0); // midnight
+	// Validate each item's price
+	body("items.*.price")
+		.notEmpty()
+		.withMessage("El precio del producto es obligatorio")
+		.isFloat({ min: 0 })
+		.withMessage("El precio debe ser un número mayor o igual a 0"),
 
-            const delivery = new Date(value);
-            delivery.setHours(0, 0, 0, 0);
+	// Validate each item's quantity
+	body("items.*.quantity")
+		.notEmpty()
+		.withMessage("La cantidad del producto es obligatoria")
+		.isInt({ min: 1 })
+		.withMessage("La cantidad debe ser un número entero mayor a 0"),
 
-            if (delivery < today) {
-                throw new Error("La Fecha Estimada debe ser hoy o una fecha futura");
-            }
+	// Validate each item's lineTotal
+	body("items.*.lineTotal")
+		.notEmpty()
+		.withMessage("El total de línea es obligatorio")
+		.isFloat({ min: 0 })
+		.withMessage("El total de línea debe ser un número mayor o igual a 0")
+		.custom((lineTotal, { req, path }) => {
+			// Extract the index from the path (e.g., "items[0].lineTotal" -> 0)
+			const match = path.match(/items\[(\d+)\]/);
+			if (match) {
+				const index = parseInt(match[1]);
+				const item = req.body.items[index];
+				const calculatedTotal = item.price * item.quantity;
 
-            return true;
-        }),
+				// Allow small floating point differences
+				if (Math.abs(lineTotal - calculatedTotal) > 0.01) {
+					throw new Error(
+						`El total de línea debe ser igual a precio × cantidad (${calculatedTotal.toFixed(2)})`,
+					);
+				}
+			}
+			return true;
+		}),
 
-    // Validate deliveredAt date
-    body("deliveredAt")
-        .optional({ checkFalsy: true })
-        .notEmpty()
-        .isISO8601()
-        .withMessage("La Fecha de Entrega Real debe ser una fecha válida")
-        .toDate(),
-        
-    handleInputErrors,
-    authenticate, 
-    authorizeAdmin, 
-    OrderController.createOrder
-)
+	// Validate payment
+	body("paymentMethod")
+		.notEmpty()
+		.withMessage("El Método de Pago es Obligatorio")
+		.trim()
+		.isString()
+		.withMessage("El método de pago debe ser un texto válido"),
+
+	body("currency")
+		.notEmpty()
+		.withMessage("El tipo de moneda no puede ir vacío")
+		.isIn(Object.values(Currencies))
+		.withMessage(
+			`Tipo de moneda invalido, aceptados ${Object.values(Currencies)}`,
+		),
+
+	// Validate purchase order number
+	body("purchaseOrderNumber")
+		.optional()
+		.notEmpty()
+		.withMessage("El número de orden de compra no puede ir vacío")
+		.isString()
+		.withMessage("El número de orden de compra debe ser un texto válido"),
+
+	// Validate shipper
+	body("shipper")
+		.notEmpty()
+		.withMessage("El Expedidor es Obligatorio")
+		.trim()
+		.isString()
+		.withMessage("El expedidor debe ser un texto válido"),
+
+	// Validate trackingNumber
+	body("trackingNumber")
+		.notEmpty()
+		.withMessage("El Tracking Number es Obligatorio")
+		.trim()
+		.isString()
+		.withMessage("El Tracking Number debe ser un texto válido"),
+
+	// Validate country
+	body("country")
+		.notEmpty()
+		.withMessage("El País es Obligatorio")
+		.trim()
+		.isString()
+		.withMessage("El país debe ser un texto válido"),
+
+	// Validate total
+	body("total")
+		.notEmpty()
+		.withMessage("El total de la orden es obligatorio")
+		.isFloat({ min: 0 })
+		.withMessage("El total debe ser un número mayor o igual a 0")
+		.custom((total, { req }) => {
+			// Validate that total matches sum of all lineTotal values
+			const calculatedTotal = req.body.items.reduce(
+				(sum: number, item: any) => sum + (item.lineTotal || 0),
+				0,
+			);
+
+			// Allow small floating point differences
+			if (Math.abs(total - calculatedTotal) > 0.01) {
+				throw new Error(
+					`El total debe ser igual a la suma de todos los productos (${calculatedTotal.toFixed(2)})`,
+				);
+			}
+			return true;
+		}),
+
+	// Validate user
+	body("user")
+		.notEmpty()
+		.withMessage("El ID de usuario es obligatorio")
+		.isMongoId()
+		.withMessage("El ID de usuario no es válido"),
+
+	body("businessName")
+		.notEmpty()
+		.withMessage("El Nombre de la Empresa es Obligatorio"),
+	body("businessId")
+		.notEmpty()
+		.withMessage("La identificación de la empresa es obligatoria")
+		.isString()
+		.withMessage(
+			"La identificación de la empresa debe ser un texto válido",
+		),
+	body("estimatedDelivery")
+		.notEmpty()
+		.withMessage("La Fecha de Entrega Estimada es Obligatoria")
+		.isISO8601()
+		.withMessage("La Fecha de Entrega Estimada debe ser una fecha válida")
+		.toDate()
+		.custom((value) => {
+			const today = new Date();
+			today.setHours(0, 0, 0, 0); // midnight
+
+			const delivery = new Date(value);
+			delivery.setHours(0, 0, 0, 0);
+
+			if (delivery < today) {
+				throw new Error(
+					"La Fecha Estimada debe ser hoy o una fecha futura",
+				);
+			}
+
+			return true;
+		}),
+
+	// Validate deliveredAt date
+	body("deliveredAt")
+		.optional({ checkFalsy: true })
+		.notEmpty()
+		.isISO8601()
+		.withMessage("La Fecha de Entrega Real debe ser una fecha válida")
+		.toDate(),
+
+	handleInputErrors,
+	authenticate,
+	authorizeAdmin,
+	OrderController.createOrder,
+);
 
 //~ Update Order | ADMIN
-router.patch("/:orderId", 
-    param("orderId")
-        .isMongoId().withMessage("ID de orden Inválido")
-        .notEmpty().withMessage("El ID de la Orden es Obligatorio"), 
+router.patch(
+	"/:orderId",
+	param("orderId")
+		.isMongoId()
+		.withMessage("ID de orden Inválido")
+		.notEmpty()
+		.withMessage("El ID de la Orden es Obligatorio"),
 
-    // Validate items array
-    body("items")
-        .optional()
-        .isArray({ min: 1 })
-        .withMessage("La orden debe contener al menos un producto"),
-    
-    // Validate each item's SKU
-    body("items.*.sku")
-        .optional()
-        .notEmpty()
-        .withMessage("El SKU del producto es obligatorio")
-        .trim()
-        .isString()
-        .withMessage("El SKU debe ser un texto válido"),
-    
-    // Validate each item's name
-    body("items.*.name")
-        .optional()
-        .notEmpty()
-        .withMessage("El nombre del producto es obligatorio")
-        .trim()
-        .isString()
-        .withMessage("El nombre debe ser un texto válido"),
-    
-    // Validate each item's price
-    body("items.*.price")
-        .optional()
-        .notEmpty()
-        .withMessage("El precio del producto es obligatorio")
-        .isFloat({ min: 0 })
-        .withMessage("El precio debe ser un número mayor o igual a 0"),
-    
-    // Validate each item's quantity
-    body("items.*.quantity")
-        .optional()
-        .notEmpty()
-        .withMessage("La cantidad del producto es obligatoria")
-        .isInt({ min: 1 })
-        .withMessage("La cantidad debe ser un número entero mayor a 0"),
-    
-    // Validate each item's lineTotal
-    body("items.*.lineTotal")
-        .optional()
-        .notEmpty()
-        .withMessage("El total de línea es obligatorio")
-        .isFloat({ min: 0 })
-        .withMessage("El total de línea debe ser un número mayor o igual a 0")
-        .custom((lineTotal, { req, path }) => {
-            // Extract the index from the path (e.g., "items[0].lineTotal" -> 0)
-            const match = path.match(/items\[(\d+)\]/);
-            if (match) {
-                const index = parseInt(match[1]);
-                const item = req.body.items[index];
-                const calculatedTotal = item.price * item.quantity;
-                
-                // Allow small floating point differences
-                if (Math.abs(lineTotal - calculatedTotal) > 0.01) {
-                    throw new Error(`El total de línea debe ser igual a precio × cantidad (${calculatedTotal.toFixed(2)})`);
-                }
-            }
-            return true;
-        }),
-    
-    // Validate payment
-    body("payment")
-        .optional()
-        .notEmpty()
-        .withMessage("El Método de Pago es Obligatorio")
-        .trim()
-        .isString()
-        .withMessage("El método de pago debe ser un texto válido"),
+	// Validate items array
+	body("items")
+		.optional()
+		.isArray({ min: 1 })
+		.withMessage("La orden debe contener al menos un producto"),
 
-    body("status")
-        .optional() 
-        .notEmpty()
-        .withMessage("El Estado de la Orden no puede ir Vacío")
-        .trim()
-        .isString()
-        .withMessage("El Estado de la Orden debe ser un texto válido")
-            .isIn(["Pendiente", "Entregado", "Cancelado", "En Transito"]).withMessage("Estado de la Orden Inválido"),
-    
-    // Validate shipper
-    body("shipper")
-        .optional()
-        .notEmpty()
-        .withMessage("El Expedidor es Obligatorio")
-        .trim()
-        .isString()
-        .withMessage("El Expedidor debe ser un texto válido"),
+	// Validate each item's SKU
+	body("items.*.sku")
+		.optional()
+		.notEmpty()
+		.withMessage("El SKU del producto es obligatorio")
+		.trim()
+		.isString()
+		.withMessage("El SKU debe ser un texto válido"),
 
-    // Validate trackingNumber
-    body("trackingNumber")
-        .optional()
-        .notEmpty()
-        .withMessage("El Tracking Number es Obligatorio")
-        .trim()
-        .isString()
-        .withMessage("El Tracking Number debe ser un texto válido"),
+	// Validate each item's name
+	body("items.*.name")
+		.optional()
+		.notEmpty()
+		.withMessage("El nombre del producto es obligatorio")
+		.trim()
+		.isString()
+		.withMessage("El nombre debe ser un texto válido"),
 
-    // Validate country
-    body("country")
-        .optional()
-        .notEmpty()
-        .withMessage("El País es Obligatorio")
-        .trim()
-        .isString()
-        .withMessage("El país debe ser un texto válido"),
-    
-    // Validate total
-    body("total")
-        .optional()
-        .notEmpty()
-        .withMessage("El total de la orden es obligatorio")
-        .isFloat({ min: 0 })
-        .withMessage("El total debe ser un número mayor o igual a 0")
-        .custom((total, { req }) => {
-            // Validate that total matches sum of all lineTotal values
-            const calculatedTotal = req.body.items.reduce(
-                (sum: number, item: any) => sum + (item.lineTotal || 0), 
-                0
-            );
-            
-            // Allow small floating point differences
-            if (Math.abs(total - calculatedTotal) > 0.01) {
-                throw new Error(`El total debe ser igual a la suma de todos los productos (${calculatedTotal.toFixed(2)})`);
-            }
-            return true;
-        }),
-    
-    // Validate user
-    body("user")
-        .optional()
-        .notEmpty()
-        .withMessage("El ID de usuario es obligatorio")
-        .isMongoId()
-        .withMessage("El ID de usuario no es válido"),
-    
-    // Validate businessName
-    body("businessName")
-        .optional()
-        .notEmpty()
-        .withMessage("El Nombre de la Empresa es Obligatorio"),
+	// Validate each item's price
+	body("items.*.price")
+		.optional()
+		.notEmpty()
+		.withMessage("El precio del producto es obligatorio")
+		.isFloat({ min: 0 })
+		.withMessage("El precio debe ser un número mayor o igual a 0"),
 
-    // Validate businessId
-    body("businessId")
-        .optional()
-        .notEmpty().withMessage("La identificación de la empresa es obligatoria")
-        .isString()
-        .withMessage("La identificación de la empresa debe ser un texto válido"),
-    
-    // Validate estimatedDelivery date
-    body("estimatedDelivery")
-        .optional()
-        .notEmpty()
-        .withMessage("La Fecha de Entrega Estimada es Obligatoria")
-        .isISO8601()
-        .withMessage("La Fecha de Entrega Estimada debe ser una fecha válida")
-        .toDate()
-        .custom((value) => {
-            if (value < new Date()) {
-                throw new Error("La Fecha Estimada debe ser en el futuro");
-            }
-            return true;
-        }),
+	// Validate each item's quantity
+	body("items.*.quantity")
+		.optional()
+		.notEmpty()
+		.withMessage("La cantidad del producto es obligatoria")
+		.isInt({ min: 1 })
+		.withMessage("La cantidad debe ser un número entero mayor a 0"),
 
-    // Validate deliveredAt date
-    body("deliveredAt")
-        .optional({ checkFalsy: true })
-        .notEmpty()
-        .isISO8601()
-        .withMessage("La Fecha de Entrega Real debe ser una fecha válida")
-        .toDate(), 
+	// Validate each item's lineTotal
+	body("items.*.lineTotal")
+		.optional()
+		.notEmpty()
+		.withMessage("El total de línea es obligatorio")
+		.isFloat({ min: 0 })
+		.withMessage("El total de línea debe ser un número mayor o igual a 0")
+		.custom((lineTotal, { req, path }) => {
+			// Extract the index from the path (e.g., "items[0].lineTotal" -> 0)
+			const match = path.match(/items\[(\d+)\]/);
+			if (match) {
+				const index = parseInt(match[1]);
+				const item = req.body.items[index];
+				const calculatedTotal = item.price * item.quantity;
 
-    handleInputErrors, 
-    authenticate, 
-    authorizeAdmin, 
-    OrderController.updateOrder
-)
+				// Allow small floating point differences
+				if (Math.abs(lineTotal - calculatedTotal) > 0.01) {
+					throw new Error(
+						`El total de línea debe ser igual a precio × cantidad (${calculatedTotal.toFixed(2)})`,
+					);
+				}
+			}
+			return true;
+		}),
+
+	// Validate payment method
+	body("paymentMethod")
+		.optional()
+		.notEmpty()
+		.withMessage("El Método de Pago es Obligatorio")
+		.trim()
+		.isString()
+		.withMessage("El método de pago debe ser un texto válido"),
+
+	body("currency")
+		.optional()
+		.notEmpty()
+		.withMessage("El tipo de moneda no puede ir vacío")
+		.isIn(Object.values(Currencies))
+		.withMessage(
+			`Tipo de moneda invalido, aceptados ${Object.values(Currencies)}`,
+		),
+
+	// Validate purchase order number
+	body("purchaseOrderNumber")
+		.optional()
+		.notEmpty()
+		.withMessage("El número de orden de compra no puede ir vacío")
+		.isString()
+		.withMessage("El número de orden de compra debe ser un texto válido"),
+
+	body("status")
+		.optional()
+		.notEmpty()
+		.withMessage("El Estado de la Orden no puede ir Vacío")
+		.trim()
+		.isString()
+		.withMessage("El Estado de la Orden debe ser un texto válido")
+		.isIn(["Pendiente", "Entregado", "Cancelado", "En Transito"])
+		.withMessage("Estado de la Orden Inválido"),
+
+	// Validate shipper
+	body("shipper")
+		.optional()
+		.notEmpty()
+		.withMessage("El Expedidor es Obligatorio")
+		.trim()
+		.isString()
+		.withMessage("El Expedidor debe ser un texto válido"),
+
+	// Validate trackingNumber
+	body("trackingNumber")
+		.optional()
+		.notEmpty()
+		.withMessage("El Tracking Number es Obligatorio")
+		.trim()
+		.isString()
+		.withMessage("El Tracking Number debe ser un texto válido"),
+
+	// Validate country
+	body("country")
+		.optional()
+		.notEmpty()
+		.withMessage("El País es Obligatorio")
+		.trim()
+		.isString()
+		.withMessage("El país debe ser un texto válido"),
+
+	// Validate total
+	body("total")
+		.optional()
+		.notEmpty()
+		.withMessage("El total de la orden es obligatorio")
+		.isFloat({ min: 0 })
+		.withMessage("El total debe ser un número mayor o igual a 0")
+		.custom((total, { req }) => {
+			// Validate that total matches sum of all lineTotal values
+			const calculatedTotal = req.body.items.reduce(
+				(sum: number, item: any) => sum + (item.lineTotal || 0),
+				0,
+			);
+
+			// Allow small floating point differences
+			if (Math.abs(total - calculatedTotal) > 0.01) {
+				throw new Error(
+					`El total debe ser igual a la suma de todos los productos (${calculatedTotal.toFixed(2)})`,
+				);
+			}
+			return true;
+		}),
+
+	// Validate user
+	body("user")
+		.optional()
+		.notEmpty()
+		.withMessage("El ID de usuario es obligatorio")
+		.isMongoId()
+		.withMessage("El ID de usuario no es válido"),
+
+	// Validate businessName
+	body("businessName")
+		.optional()
+		.notEmpty()
+		.withMessage("El Nombre de la Empresa es Obligatorio"),
+
+	// Validate businessId
+	body("businessId")
+		.optional()
+		.notEmpty()
+		.withMessage("La identificación de la empresa es obligatoria")
+		.isString()
+		.withMessage(
+			"La identificación de la empresa debe ser un texto válido",
+		),
+
+	// Validate estimatedDelivery date
+	body("estimatedDelivery")
+		.optional()
+		.notEmpty()
+		.withMessage("La Fecha de Entrega Estimada es Obligatoria")
+		.isISO8601()
+		.withMessage("La Fecha de Entrega Estimada debe ser una fecha válida")
+		.toDate()
+		.custom((value) => {
+			if (value < new Date()) {
+				throw new Error("La Fecha Estimada debe ser en el futuro");
+			}
+			return true;
+		}),
+
+	// Validate deliveredAt date
+	body("deliveredAt")
+		.optional({ checkFalsy: true })
+		.notEmpty()
+		.isISO8601()
+		.withMessage("La Fecha de Entrega Real debe ser una fecha válida")
+		.toDate(),
+
+	handleInputErrors,
+	authenticate,
+	authorizeAdmin,
+	OrderController.updateOrder,
+);
 
 //~ Update Order status | ADMIN
-router.patch("/status/:orderId", 
-    param("orderId")
-        .isMongoId().withMessage("ID de orden Inválido")
-        .notEmpty().withMessage("El ID de la Orden es Obligatorio"), 
-    body("status")
-        .notEmpty()
-        .withMessage("El Estado de la Orden no puede ir Vacío")
-        .trim()
-        .isString()
-        .withMessage("El Estado de la Orden debe ser un texto válido")
-            .isIn(["Pendiente", "Entregado", "Cancelado", "En Transito"]).withMessage("Estado de la Orden Inválido"),
-    handleInputErrors, 
-    authenticate, 
-    authorizeAdmin, 
-    OrderController.updateOrderStatus
-)
+router.patch(
+	"/status/:orderId",
+	param("orderId")
+		.isMongoId()
+		.withMessage("ID de orden Inválido")
+		.notEmpty()
+		.withMessage("El ID de la Orden es Obligatorio"),
+	body("status")
+		.notEmpty()
+		.withMessage("El Estado de la Orden no puede ir Vacío")
+		.trim()
+		.isString()
+		.withMessage("El Estado de la Orden debe ser un texto válido")
+		.isIn(["Pendiente", "Entregado", "Cancelado", "En Transito"])
+		.withMessage("Estado de la Orden Inválido"),
+	handleInputErrors,
+	authenticate,
+	authorizeAdmin,
+	OrderController.updateOrderStatus,
+);
 
 //! Delete Order | ADMIN
-router.delete("/:orderId", 
-    param("orderId")
-        .isMongoId().withMessage("ID de orden Inválido")
-        .notEmpty().withMessage("El ID de la Orden es Obligatorio"), 
-    handleInputErrors, 
-    authenticate, 
-    authorizeAdmin, 
-    OrderController.deleteOrder
-)
+router.delete(
+	"/:orderId",
+	param("orderId")
+		.isMongoId()
+		.withMessage("ID de orden Inválido")
+		.notEmpty()
+		.withMessage("El ID de la Orden es Obligatorio"),
+	handleInputErrors,
+	authenticate,
+	authorizeAdmin,
+	OrderController.deleteOrder,
+);
 
+// TODO: delete in the future, as bsale orders are no longer used
 //? Send Order Emails
 
 // Send Order Email to Admin & Client on Order Submission | Deprecated until further updates
@@ -495,7 +592,7 @@ router.post(
 		.isArray({ min: 1 }),
 	handleInputErrors,
 	authenticate,
-	OrderController.sendOrderEmails
+	OrderController.sendOrderEmails,
 );
 
 export default router;

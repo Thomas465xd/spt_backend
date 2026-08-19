@@ -1,103 +1,104 @@
 import resend from "../config/resend";
 
+// TODO: File flagged for deletion
 interface CartDetail {
-    id: number;
-    quantity: number;
-    unitValue: number;
-    netUnitValue: number;
-    discount: number;
-    itemName: string;
-    total: number;
-    image: string;
-    idVarianteProducto: number;
-    sku: string;
-    link: string;
-    notice: string;
-    description: string;
-    productWebId: number;
-    cartId: number;
-    taxList: number[];
-    name: string;
-    value: number;
-    cd_q: number;
-    cd_unit_value: number;
-    cd_discount: number;
-    cd_item_name: string;
-    cd_sub_total: number;
-    cd_id: number;
-    cd_id_discount: number;
-    cd_image: string;
-    id_variante_producto: number;
-    codigo_variante_producto: string;
-    href: string;
+	id: number;
+	quantity: number;
+	unitValue: number;
+	netUnitValue: number;
+	discount: number;
+	itemName: string;
+	total: number;
+	image: string;
+	idVarianteProducto: number;
+	sku: string;
+	link: string;
+	notice: string;
+	description: string;
+	productWebId: number;
+	cartId: number;
+	taxList: number[];
+	name: string;
+	value: number;
+	cd_q: number;
+	cd_unit_value: number;
+	cd_discount: number;
+	cd_item_name: string;
+	cd_sub_total: number;
+	cd_id: number;
+	cd_id_discount: number;
+	cd_image: string;
+	id_variante_producto: number;
+	codigo_variante_producto: string;
+	href: string;
 }
 
 interface OrderEmailInterface {
-    token: string;
-    clientName: string;
-    clientEmail: string;
-    clientPhone: string;
-    clientCountry: string;
-    clientState: string;
-    clientCityZone: string;
-    clientStreet: string;
-    clientPostcode: string;
-    clientBuildingNumber: string;
-    shippingCost: number;
-    total: number;
-    cartDetails: CartDetail[];
-    totalDiscount?: number;
+	token: string;
+	clientName: string;
+	clientEmail: string;
+	clientPhone: string;
+	clientCountry: string;
+	clientState: string;
+	clientCityZone: string;
+	clientStreet: string;
+	clientPostcode: string;
+	clientBuildingNumber: string;
+	shippingCost: number;
+	total: number;
+	cartDetails: CartDetail[];
+	totalDiscount?: number;
 }
 
 export class OrderEmail {
-    static sendOrderEmailToClient = async (order: OrderEmailInterface) => {
-        const {
-            token,
-            clientName,
-            clientEmail,
-            clientCountry,
-            clientState,
-            clientCityZone,
-            clientStreet,
-            clientPostcode,
-            clientBuildingNumber,
-            shippingCost,
-            total,
-            cartDetails,
-            totalDiscount = 0
-        } = order;
+	static sendOrderEmailToClient = async (order: OrderEmailInterface) => {
+		const {
+			token,
+			clientName,
+			clientEmail,
+			clientCountry,
+			clientState,
+			clientCityZone,
+			clientStreet,
+			clientPostcode,
+			clientBuildingNumber,
+			shippingCost,
+			total,
+			cartDetails,
+			totalDiscount = 0,
+		} = order;
 
-        // Format currency
-        const formatCurrency = (value: number) : string => {
-            return `$ ${Math.round(value).toLocaleString("es-CL")}`;
-        }
-        
-        // Calculate subtotal (total before shipping)
-        const subtotal = total - shippingCost;
-        const subtotalWithoutDiscount = (subtotal * 100) / 80;
-        const iva = subtotalWithoutDiscount * 0.19;
-        const totalWithTax = subtotal + iva;
+		// Format currency
+		const formatCurrency = (value: number): string => {
+			return `$ ${Math.round(value).toLocaleString("es-CL")}`;
+		};
 
-        // Check if any product has a discount
-        const hasAnyDiscount = cartDetails.some(item => 
-            (item.discount > 0 || item.cd_discount > 0)
-        );
+		// Calculate subtotal (total before shipping)
+		const subtotal = total - shippingCost;
+		const subtotalWithoutDiscount = (subtotal * 100) / 80;
+		const iva = subtotalWithoutDiscount * 0.19;
+		const totalWithTax = subtotal + iva;
 
-        // Get date in Spanish format
-        const now = new Date();
-        const options: Intl.DateTimeFormatOptions = { 
-            year: 'numeric', 
-            month: 'long', 
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        };
-        const formattedDate = now.toLocaleDateString('es-CL', options);
-        
-        // Estimate delivery date (7 days from now)
-        const deliveryDate = new Date();
-        deliveryDate.setDate(deliveryDate.getDate() + 7);
-        /*
+		// Check if any product has a discount
+		const hasAnyDiscount = cartDetails.some(
+			(item) => item.discount > 0 || item.cd_discount > 0,
+		);
+
+		// Get date in Spanish format
+		const now = new Date();
+		const options: Intl.DateTimeFormatOptions = {
+			year: "numeric",
+			month: "long",
+			day: "numeric",
+			hour: "2-digit",
+			minute: "2-digit",
+		};
+		const formattedDate = now.toLocaleDateString("es-CL", options);
+
+		// Estimate delivery date (7 days from now)
+		const deliveryDate = new Date();
+		deliveryDate.setDate(deliveryDate.getDate() + 7);
+		/*
         const formattedDeliveryDate = deliveryDate.toLocaleDateString('es-CL', {
             year: 'numeric', 
             month: 'long', 
@@ -105,8 +106,8 @@ export class OrderEmail {
         });
         */
 
-        // Generate HTML for the email
-        const emailHTML = `
+		// Generate HTML for the email
+		const emailHTML = `
         <!DOCTYPE html>
         <html>
         <head>
@@ -430,7 +431,7 @@ export class OrderEmail {
                 </div>
                 
                 <div class="thank-you">
-                    ¡Gracias por tu compra, ${clientName.split(' ')[0]}!
+                    ¡Gracias por tu compra, ${clientName.split(" ")[0]}!
                 </div>
                 
                 <div class="content">
@@ -493,47 +494,63 @@ export class OrderEmail {
                                 <th style="width: 70px;">Imagen</th>
                                 <th>Producto</th>
                                 <th>Precio</th>
-                                ${hasAnyDiscount ? '<th>Descuento</th>' : ''}
+                                ${hasAnyDiscount ? "<th>Descuento</th>" : ""}
                                 <th>Cantidad</th>
                                 <th>Total</th>
                             </tr>
                         </thead>
                         <tbody>
-                            ${cartDetails.map(item => {
-                                const discountValue = item.discount || item.cd_discount || 0;
-                                const hasDiscount = discountValue > 0;
-                                const unitValue = item.unitValue || item.cd_unit_value || 0;
-                                const discountedPrice = unitValue * (1 - discountValue / 100);
-                                
-                                return `
+                            ${cartDetails
+								.map((item) => {
+									const discountValue =
+										item.discount || item.cd_discount || 0;
+									const hasDiscount = discountValue > 0;
+									const unitValue =
+										item.unitValue ||
+										item.cd_unit_value ||
+										0;
+									const discountedPrice =
+										unitValue * (1 - discountValue / 100);
+
+									return `
                                 <tr>
                                     <td><img src="${item.image || item.cd_image}" alt="${item.itemName}" class="product-image"></td>
                                     <td>
                                         <div class="product-name">
                                             ${item.itemName || item.cd_item_name}
-                                            ${hasDiscount ? `<span class="discount-badge">${discountValue}% OFF</span>` : ''}
+                                            ${hasDiscount ? `<span class="discount-badge">${discountValue}% OFF</span>` : ""}
                                         </div>
-                                        ${item.description ? `<div class="product-details">${item.description}</div>` : ''}
-                                        ${item.notice ? `<div class="notice">${item.notice}</div>` : ''}
-                                        <div class="product-details">SKU: ${item.sku || item.codigo_variante_producto || 'N/A'}</div>
+                                        ${item.description ? `<div class="product-details">${item.description}</div>` : ""}
+                                        ${item.notice ? `<div class="notice">${item.notice}</div>` : ""}
+                                        <div class="product-details">SKU: ${item.sku || item.codigo_variante_producto || "N/A"}</div>
                                     </td>
                                     <td>
-                                        ${hasDiscount ? `
+                                        ${
+											hasDiscount
+												? `
                                             <div class="price-with-discount">
                                                 <span class="original-price">${formatCurrency(unitValue)}</span>
                                                 <span class="discounted-price">${formatCurrency(discountedPrice)}</span>
                                             </div>
-                                        ` : formatCurrency(unitValue)}
+                                        `
+												: formatCurrency(unitValue)
+										}
                                     </td>
-                                    ${hasAnyDiscount ? `
+                                    ${
+										hasAnyDiscount
+											? `
                                         <td class="green-text">
-                                            ${hasDiscount ? `-${formatCurrency(unitValue * discountValue / 100)}` : '-'}
+                                            ${hasDiscount ? `-${formatCurrency((unitValue * discountValue) / 100)}` : "-"}
                                         </td>
-                                    ` : ''}
+                                    `
+											: ""
+									}
                                     <td>${item.quantity || item.cd_q}</td>
                                     <td>${formatCurrency(item.total || item.cd_sub_total)}</td>
                                 </tr>
-                            `}).join('')}
+                            `;
+								})
+								.join("")}
                         </tbody>
                     </table>
                     
@@ -543,12 +560,16 @@ export class OrderEmail {
                                 <td>Subtotal:</td>
                                 <td>${formatCurrency(subtotal)}</td>
                             </tr>
-                            ${totalDiscount > 0 ? `
+                            ${
+								totalDiscount > 0
+									? `
                             <tr>
                                 <td>Descuento:</td>
                                 <td class="green-text">-${formatCurrency(totalDiscount)}</td>
                             </tr>
-                            ` : ''}
+                            `
+									: ""
+							}
                             <tr>
                                 <td>IVA:</td>
                                 <td>${formatCurrency(iva)}</td>
@@ -590,63 +611,63 @@ export class OrderEmail {
         </html>
         `;
 
-        // Send the email
-        await resend.emails.send({
-            from: `"Portal SPT - Confirmación de Pedido" <${process.env.NOREPLY_EMAIL}>`,
-            to: clientEmail,
-            subject: `🎉 ¡Pedido #${token} Confirmado!`,
-            html: emailHTML,
-        });
-    }
+		// Send the email
+		await resend.emails.send({
+			from: `"Portal SPT - Confirmación de Pedido" <${process.env.NOREPLY_EMAIL}>`,
+			to: clientEmail,
+			subject: `🎉 ¡Pedido #${token} Confirmado!`,
+			html: emailHTML,
+		});
+	};
 
-    static sendOrderEmailToAdmin = async (order: OrderEmailInterface) => {
-        const {
-            token,
-            clientName,
-            clientEmail,
-            clientPhone,
-            clientCountry,
-            clientState,
-            clientCityZone,
-            clientStreet,
-            clientPostcode,
-            clientBuildingNumber,
-            shippingCost,
-            total,
-            cartDetails,
-            totalDiscount = 0 // Added discount parameter
-        } = order;
-    
-        // Format currency
-        const formatCurrency = (value: number) : string => {
-            return `$ ${value.toLocaleString("es-CL")}`;
-        }
-        
-        // Calculate subtotal (total before shipping)
-        const subtotal = total - shippingCost;
-        const subtotalWithoutDiscount = (subtotal * 100) / 80;
-        const iva = subtotalWithoutDiscount * 0.19;
-        
-        // Calculate discount amount if discount percentage is provided
-        const discountPercentage = totalDiscount || 0;
-        const discountAmount = subtotal * (discountPercentage / 100);
-        
-        // Calculate total with tax and discount
-        const totalWithTaxAndDiscount = subtotal + iva - discountAmount;
-    
-        // Get date in Spanish format
-        const now = new Date();
-        const options: Intl.DateTimeFormatOptions = { 
-            year: 'numeric', 
-            month: 'long', 
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        };
-        const formattedDate = now.toLocaleDateString('es-CL', options);
-    
-        // Generate HTML for the email
-        const emailHTML = `
+	static sendOrderEmailToAdmin = async (order: OrderEmailInterface) => {
+		const {
+			token,
+			clientName,
+			clientEmail,
+			clientPhone,
+			clientCountry,
+			clientState,
+			clientCityZone,
+			clientStreet,
+			clientPostcode,
+			clientBuildingNumber,
+			shippingCost,
+			total,
+			cartDetails,
+			totalDiscount = 0, // Added discount parameter
+		} = order;
+
+		// Format currency
+		const formatCurrency = (value: number): string => {
+			return `$ ${value.toLocaleString("es-CL")}`;
+		};
+
+		// Calculate subtotal (total before shipping)
+		const subtotal = total - shippingCost;
+		const subtotalWithoutDiscount = (subtotal * 100) / 80;
+		const iva = subtotalWithoutDiscount * 0.19;
+
+		// Calculate discount amount if discount percentage is provided
+		const discountPercentage = totalDiscount || 0;
+		const discountAmount = subtotal * (discountPercentage / 100);
+
+		// Calculate total with tax and discount
+		const totalWithTaxAndDiscount = subtotal + iva - discountAmount;
+
+		// Get date in Spanish format
+		const now = new Date();
+		const options: Intl.DateTimeFormatOptions = {
+			year: "numeric",
+			month: "long",
+			day: "numeric",
+			hour: "2-digit",
+			minute: "2-digit",
+		};
+		const formattedDate = now.toLocaleDateString("es-CL", options);
+
+		// Generate HTML for the email
+		const emailHTML = `
         <!DOCTYPE html>
         <html>
         <head>
@@ -895,20 +916,24 @@ export class OrderEmail {
                             </tr>
                         </thead>
                         <tbody>
-                            ${cartDetails.map(item => `
+                            ${cartDetails
+								.map(
+									(item) => `
                                 <tr>
                                     <td><img src="${item.image}" alt="${item.itemName}" class="product-image"></td>
                                     <td>
                                         <div class="product-name">${item.itemName}</div>
-                                        ${item.description ? `<div class="product-details">${item.description}</div>` : ''}
-                                        ${item.notice ? `<div class="notice">${item.notice}</div>` : ''}
+                                        ${item.description ? `<div class="product-details">${item.description}</div>` : ""}
+                                        ${item.notice ? `<div class="notice">${item.notice}</div>` : ""}
                                     </td>
                                     <td>${item.sku}</td>
                                     <td>${formatCurrency(item.unitValue)}</td>
                                     <td>${item.quantity}</td>
                                     <td>${formatCurrency(item.total)}</td>
                                 </tr>
-                            `).join('')}
+                            `,
+								)
+								.join("")}
                         </tbody>
                     </table>
                     
@@ -922,12 +947,16 @@ export class OrderEmail {
                                 <td>IVA:</td>
                                 <td>${formatCurrency(iva)}</td>
                             </tr>
-                            ${totalDiscount > 0 ? `
+                            ${
+								totalDiscount > 0
+									? `
                             <tr class="discount-row">
                                 <td>Descuento (${discountPercentage}%):</td>
                                 <td>-${formatCurrency(discountAmount)}</td>
                             </tr>
-                            ` : ''}
+                            `
+									: ""
+							}
                             <tr>
                                 <td>Envío:</td>
                                 <td>${formatCurrency(shippingCost)}</td>
@@ -953,16 +982,16 @@ export class OrderEmail {
         </body>
         </html>
         `;
-    
-        // Send the email
-        const adminEmail = process.env.ADMIN_EMAIL;
-    
-        await resend.emails.send({
-            from: `"SPT - Nuevo Pedido" <noreply@portalspt.cl>`,
-            to: adminEmail,
-            subject: "🔔 Nueva Orden Solicitada",
-            html: emailHTML,
-            replyTo: "contacto@sptrade.cl"
-        });
-    }
+
+		// Send the email
+		const adminEmail = process.env.ADMIN_EMAIL;
+
+		await resend.emails.send({
+			from: `"SPT - Nuevo Pedido" <noreply@portalspt.cl>`,
+			to: adminEmail,
+			subject: "🔔 Nueva Orden Solicitada",
+			html: emailHTML,
+			replyTo: "contacto@sptrade.cl",
+		});
+	};
 }

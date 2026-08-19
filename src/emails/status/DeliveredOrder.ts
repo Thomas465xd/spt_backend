@@ -3,28 +3,35 @@ import { InternalServerError } from "../../errors/server-error";
 import { OrderInterface } from "../../models/Order";
 import { UserInterface } from "../../models/User";
 
+// TODO: Account for peruvian currency
+// for this a fomatCurrency(currency: "CLP" | "PEN") function should be created in a utility file
 export class DeliveredOrderEmail {
-    static sendDeliveredOrderEmail = async (user: UserInterface, order: OrderInterface) => { 
-        try {
-            // Format price helper
-            const formatPrice = (amount: number) => {
-                return new Intl.NumberFormat('es-CL', {
-                    style: 'currency',
-                    currency: 'CLP'
-                }).format(amount);
-            };
+	static sendDeliveredOrderEmail = async (
+		user: UserInterface,
+		order: OrderInterface,
+	) => {
+		try {
+			// Format price helper
+			const formatPrice = (amount: number) => {
+				return new Intl.NumberFormat("es-CL", {
+					style: "currency",
+					currency: "CLP",
+				}).format(amount);
+			};
 
-            // Format date helper
-            const formatDate = (date: Date) => {
-                return new Date(date).toLocaleDateString('es-CL', {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric'
-                });
-            };
+			// Format date helper
+			const formatDate = (date: Date) => {
+				return new Date(date).toLocaleDateString("es-CL", {
+					year: "numeric",
+					month: "long",
+					day: "numeric",
+				});
+			};
 
-            // Generate items HTML
-            const itemsHTML = order.items.map(item => `
+			// Generate items HTML
+			const itemsHTML = order.items
+				.map(
+					(item) => `
                 <tr>
                     <td style="padding: 12px; border-bottom: 1px solid #f1f1f1;">
                         <div style="font-weight: 600; color: #1a1a1a; margin-bottom: 4px;">${item.name}</div>
@@ -40,9 +47,11 @@ export class DeliveredOrderEmail {
                         ${formatPrice(item.lineTotal)}
                     </td>
                 </tr>
-            `).join('');
+            `,
+				)
+				.join("");
 
-            const emailHTML = `
+			const emailHTML = `
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -347,19 +356,19 @@ export class DeliveredOrderEmail {
 </html>
             `;
 
-            const mailOptions = {
-                from: `"Portal SPT" <${process.env.NOREPLY_EMAIL}>`,
-                to: [user.email], 
-                subject: `🎉✅ ¡Tu Orden Ha Sido Entregada! ${user.name}`, 
-                html: emailHTML
-            }
+			const mailOptions = {
+				from: `"Portal SPT" <${process.env.NOREPLY_EMAIL}>`,
+				to: [user.email],
+				subject: `🎉✅ ¡Tu Orden Ha Sido Entregada! ${user.name}`,
+				html: emailHTML,
+			};
 
-            const response = await resend.emails.send(mailOptions); 
-            console.log("✅ Email sent successfully", user.email);
-            console.log(response)
-        } catch (error) {
-            console.error("❌ Error sending email:", error);
-            throw new InternalServerError(); 
-        }
-    }
+			const response = await resend.emails.send(mailOptions);
+			console.log("✅ Email sent successfully", user.email);
+			console.log(response);
+		} catch (error) {
+			console.error("❌ Error sending email:", error);
+			throw new InternalServerError();
+		}
+	};
 }
