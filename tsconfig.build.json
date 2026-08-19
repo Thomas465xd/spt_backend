@@ -4,6 +4,8 @@
 		"node_modules",
 		"coverage",
 		"src/**/*.spec.ts",
-		"src/**/*.test.ts"
+		"src/**/*.test.ts",
+		"src/tests/setup.ts",
+		"src/config/__mocks__/"
 	]
 }
