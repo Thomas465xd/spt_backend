@@ -1,4 +1,4 @@
-import { formatCurrency, formatDate } from "@/src/utils";
+import { formatCurrency, formatDate } from "@/utils";
 import resend from "../../config/resend";
 import { InternalServerError } from "../../errors/server-error";
 import { OrderInterface } from "../../models/Order";
