@@ -2,7 +2,14 @@ import { Router } from "express";
 import { AuthController } from "../controllers/AuthController";
 import { body, param } from "express-validator";
 import { handleInputErrors } from "../middleware/validation";
-import { authenticate, authorizeAdmin, checkExistingUser, checkUserStatus, userExists, validateToken } from "../middleware/auth";
+import {
+	authenticate,
+	authorizeAdmin,
+	checkExistingUser,
+	checkUserStatus,
+	userExists,
+	validateToken,
+} from "../middleware/auth";
 import { AdminController } from "../controllers/AdminController";
 import { ProfileController } from "../controllers/ProfileController";
 import { Countries, Identifications } from "../types";
@@ -12,274 +19,333 @@ const router = Router();
 
 // Client Auth Routes
 
-//^ Create Account 
-router.post("/create-account", 
-    body("name")
-        .notEmpty().withMessage("El Nombre es obligatorio"),
-    body("businessName")
-        .notEmpty().withMessage("El Nombre de la Empresa es obligatorio"),
-    body("country")
-        .notEmpty().withMessage("El país es obligatorio")
-        .isIn(Object.values(Countries))
-        .withMessage("País no soportado"),
-    body("idType")
-        .notEmpty().withMessage("El tipo de identificación es obligatorio")
-        .isIn(Object.values(Identifications))
-        .withMessage("Tipo de identificación no válido"),
-    body("personalId")
-        .notEmpty().withMessage("La identificación personal es obligatoria")
-        .custom((value, { req }) => {
-            return validatePersonalId(value, req.body.country as Countries);
-        }),
-    body("businessId")
-        .notEmpty().withMessage("La identificación de la empresa es obligatoria")
-        .custom((value, { req }) => {
-            return validateBusinessId(value, req.body.country as Countries);
-        }),
-    body("phone")
-        .notEmpty().withMessage("El teléfono es obligatorio")
-        .trim(),
-    body("email")
-        .notEmpty().withMessage("El Email es obligatorio")
-        .isEmail().withMessage("El Email no es válido"), 
-    body("address")
-        .notEmpty().withMessage("La Dirección es obligatoria"),
-    handleInputErrors,
-    checkExistingUser,
-    AuthController.createAccount
-)
+//^ Create Account
+router.post(
+	"/create-account",
+	body("name").notEmpty().withMessage("El Nombre es obligatorio"),
+	body("businessName")
+		.notEmpty()
+		.withMessage("El Nombre de la Empresa es obligatorio"),
+	body("country")
+		.notEmpty()
+		.withMessage("El país es obligatorio")
+		.isIn(Object.values(Countries))
+		.withMessage("País no soportado"),
+	body("idType")
+		.notEmpty()
+		.withMessage("El tipo de identificación es obligatorio")
+		.isIn(Object.values(Identifications))
+		.withMessage("Tipo de identificación no válido"),
+	body("personalId")
+		.notEmpty()
+		.withMessage("La identificación personal es obligatoria")
+		.custom((value, { req }) => {
+			return validatePersonalId(value, req.body.country as Countries);
+		}),
+	body("businessId")
+		.notEmpty()
+		.withMessage("La identificación de la empresa es obligatoria")
+		.custom((value, { req }) => {
+			return validateBusinessId(value, req.body.country as Countries);
+		}),
+	body("phone").notEmpty().withMessage("El teléfono es obligatorio").trim(),
+	body("email")
+		.notEmpty()
+		.withMessage("El Email es obligatorio")
+		.isEmail()
+		.withMessage("El Email no es válido"),
+	body("address").notEmpty().withMessage("La Dirección es obligatoria"),
+	handleInputErrors,
+	checkExistingUser,
+	AuthController.createAccount,
+);
 
 /** Validate setPassword token */
-router.get("/validate-token/:token", 
-    param("token")
-        .notEmpty().withMessage("El Token de Ingreso es Obligatorio"),
-    handleInputErrors,
-    validateToken("password_reset"),
-    AuthController.validateToken
-)
+router.get(
+	"/validate-token/:token",
+	param("token").notEmpty().withMessage("El Token de Ingreso es Obligatorio"),
+	handleInputErrors,
+	validateToken("password_reset"),
+	AuthController.validateToken,
+);
 
 /** Set user password */
-router.post("/set-password/:token",
-    param("token")
-        .notEmpty().withMessage("El Token de Ingreso es Obligatorio"),
-    body("password")
-        .isLength({ min: 8 }).withMessage("La contraseña debe tener al menos 8 caracteres")
-        .trim()
-        .escape(), 
-    body("confirmPassword")
-        .trim()
-        .custom((value, { req }) => {
-            if(value !== req.body.password) {
-                throw new Error("Las contraseñas no coinciden");
-            }
-            return true
-        }),
-    handleInputErrors,
-    validateToken("password_reset"),
-    checkUserStatus,
-    AuthController.createPassword
-)
+router.post(
+	"/set-password/:token",
+	param("token").notEmpty().withMessage("El Token de Ingreso es Obligatorio"),
+	body("password")
+		.isLength({ min: 8 })
+		.withMessage("La contraseña debe tener al menos 8 caracteres")
+		.trim()
+		.escape(),
+	body("confirmPassword")
+		.trim()
+		.custom((value, { req }) => {
+			if (value !== req.body.password) {
+				throw new Error("Las contraseñas no coinciden");
+			}
+			return true;
+		}),
+	handleInputErrors,
+	validateToken("password_reset"),
+	checkUserStatus,
+	AuthController.createPassword,
+);
 
 /** Login User */
-router.post("/login",
-    body("personalId")
-        .notEmpty().withMessage("La identificación personal es obligatoria"),
-    body("email")
-        .notEmpty().withMessage("El Email es obligatorio")
-        .isEmail().withMessage("El Email no es válido"),
-    body("password")
-        .notEmpty().withMessage("La contraseña no puede estar vacia"),
-    handleInputErrors,
-    
-    AuthController.login
-)
+router.post(
+	"/login",
+	body("personalId")
+		.notEmpty()
+		.withMessage("La identificación personal es obligatoria"),
+	body("email")
+		.notEmpty()
+		.withMessage("El Email es obligatorio")
+		.isEmail()
+		.withMessage("El Email no es válido"),
+	body("password")
+		.notEmpty()
+		.withMessage("La contraseña no puede estar vacia"),
+	handleInputErrors,
+
+	AuthController.login,
+);
 
 /** Forgot Password */
-router.post("/forgot-password", 
-    body("email")
-        .notEmpty().withMessage("El Email es Obligatorio")
-        .isEmail().withMessage("El Email no es Valido"),
-    handleInputErrors,
-    AuthController.forgotPassword
-)
+router.post(
+	"/forgot-password",
+	body("email")
+		.notEmpty()
+		.withMessage("El Email es Obligatorio")
+		.isEmail()
+		.withMessage("El Email no es Valido"),
+	handleInputErrors,
+	AuthController.forgotPassword,
+);
 
 /** Reset User Password */
-router.post("/reset-password/:token",
-    param("token")
-        .notEmpty().withMessage("El Token de Ingreso es Obligatorio"),
-    body("password")
-        .isLength({ min: 8 }).withMessage("La contraseña debe tener al menos 8 caracteres")
-        .trim()
-        .escape(), 
-    body("confirmPassword")
-        .notEmpty().withMessage("La confirmación de la contraseña es Obligatoria")
-        .trim()
-        .custom((value, { req }) => {
-            if(value !== req.body.password) {
-                throw new Error("Las contraseñas no coinciden");
-            }
-            return true
-        }),
-    handleInputErrors,
-    validateToken("password_reset"),
-    checkUserStatus,
-    AuthController.resetPassword
-)
+router.post(
+	"/reset-password/:token",
+	param("token").notEmpty().withMessage("El Token de Ingreso es Obligatorio"),
+	body("password")
+		.isLength({ min: 8 })
+		.withMessage("La contraseña debe tener al menos 8 caracteres")
+		.trim()
+		.escape(),
+	body("confirmPassword")
+		.notEmpty()
+		.withMessage("La confirmación de la contraseña es Obligatoria")
+		.trim()
+		.custom((value, { req }) => {
+			if (value !== req.body.password) {
+				throw new Error("Las contraseñas no coinciden");
+			}
+			return true;
+		}),
+	handleInputErrors,
+	validateToken("password_reset"),
+	checkUserStatus,
+	AuthController.resetPassword,
+);
 
 //* Auth Client Routes (Profile) */
 
 /** Update User Profile */
-router.patch("/profile/update",
-    body("name")
-        .notEmpty().withMessage("El Nombre no puede ir vacío"), 
-    body("businessName")
-        .notEmpty().withMessage("El Nombre de la Empresa es Obligatorio"),
-    body("email")
-        .notEmpty().withMessage("El Email es Obligatorio")
-        .isEmail().withMessage("El Email no es Valido"),
-    body("phone")
-        .matches(/^(\+56\s?9\d{8}|9\d{8})$/)
-        .trim()
-        .withMessage("Formato de teléfono inválido. Example: +56912345678 or 912345678"),
-    body("address")
-        .notEmpty().withMessage("La Dirección es Obligatoria"),
-    handleInputErrors,
-    authenticate,
-    ProfileController.updateProfile
-)
+router.patch(
+	"/profile/update",
+	body("name").notEmpty().withMessage("El Nombre no puede ir vacío"),
+	body("businessName")
+		.notEmpty()
+		.withMessage("El Nombre de la Empresa es Obligatorio"),
+	body("email")
+		.notEmpty()
+		.withMessage("El Email es Obligatorio")
+		.isEmail()
+		.withMessage("El Email no es Valido"),
+	body("phone")
+		.matches(/^(\+56\s?9\d{8}|9\d{8})$/)
+		.trim()
+		.withMessage(
+			"Formato de teléfono inválido. Example: +56912345678 or 912345678",
+		),
+	body("address").notEmpty().withMessage("La Dirección es Obligatoria"),
+	handleInputErrors,
+	authenticate,
+	ProfileController.updateProfile,
+);
 
 /** Update Extra User Info (Address, Postcode, etc...) */
-router.patch("/profile/update-shipping-info",
-    body("region").optional().isIn([
-        "Arica y Parinacota", "Tarapacá", "Antofagasta", "Atacama", "Coquimbo",
-        "Valparaíso", "Metropolitana de Santiago", "O'Higgins", "Maule", "Ñuble",
-        "Biobío", "La Araucanía", "Los Ríos", "Los Lagos", "Aysén", "Magallanes"
-    ]).withMessage("Región inválida."),
-    handleInputErrors,
-    authenticate,
-    ProfileController.updateExtraInfo
-)
+router.patch(
+	"/profile/update-shipping-info",
+	body("region")
+		.optional()
+		.isIn([
+			"Arica y Parinacota",
+			"Tarapacá",
+			"Antofagasta",
+			"Atacama",
+			"Coquimbo",
+			"Valparaíso",
+			"Metropolitana de Santiago",
+			"O'Higgins",
+			"Maule",
+			"Ñuble",
+			"Biobío",
+			"La Araucanía",
+			"Los Ríos",
+			"Los Lagos",
+			"Aysén",
+			"Magallanes",
+		])
+		.withMessage("Región inválida."),
+	handleInputErrors,
+	authenticate,
+	ProfileController.updateExtraInfo,
+);
 
 /** Update User Password in Profile Config */
-router.patch("/profile/update-password",
-    body("currentPassword")
-        .notEmpty().withMessage("La Contraseña Actual es Obligatoria"),
-    body("newPassword")
-        .isLength({ min: 8 }).withMessage("La contraseña debe tener al menos 8 caracteres")
-        .trim()
-        .escape(),
-    body("confirmPassword")
-        .notEmpty().withMessage("La confirmación de la contraseña es Obligatoria")
-        .trim()
-        .custom((value, { req }) => {
-            if(value !== req.body.newPassword) {
-                throw new Error("Las contraseñas no coinciden");
-            }
-            return true
-        }),
-    handleInputErrors,
-    authenticate,
-    ProfileController.updatePassword
-)
+router.patch(
+	"/profile/update-password",
+	body("currentPassword")
+		.notEmpty()
+		.withMessage("La Contraseña Actual es Obligatoria"),
+	body("newPassword")
+		.isLength({ min: 8 })
+		.withMessage("La contraseña debe tener al menos 8 caracteres")
+		.trim()
+		.escape(),
+	body("confirmPassword")
+		.notEmpty()
+		.withMessage("La confirmación de la contraseña es Obligatoria")
+		.trim()
+		.custom((value, { req }) => {
+			if (value !== req.body.newPassword) {
+				throw new Error("Las contraseñas no coinciden");
+			}
+			return true;
+		}),
+	handleInputErrors,
+	authenticate,
+	ProfileController.updatePassword,
+);
 
 /** Get authenticated user */
-router.get("/user",
-    authenticate,
-    handleInputErrors,
-    AdminController.getAuthenticatedUser
-)
+router.get(
+	"/user",
+	authenticate,
+	handleInputErrors,
+	AdminController.getAuthenticatedUser,
+);
 
 //! Admin Auth Routes
 
 /* Get Confirmed Users */
-router.get("/admin/users", 
-    authenticate,
-    authorizeAdmin,
-    handleInputErrors,
-    AdminController.getConfirmedUsers
-)
+router.get(
+	"/admin/users",
+	authenticate,
+	authorizeAdmin,
+	handleInputErrors,
+	AdminController.getConfirmedUsers,
+);
 
 /** Get Unconfirmed Users */
-router.get("/admin/unconfirmed-users",
-    authenticate,
-    authorizeAdmin,
-    handleInputErrors,
-    AdminController.getUnconfirmedUsers
-)
+router.get(
+	"/admin/unconfirmed-users",
+	authenticate,
+	authorizeAdmin,
+	handleInputErrors,
+	AdminController.getUnconfirmedUsers,
+);
 
 /** Get user by id */
-router.get("/admin/user/:id",
-    param("id")
-        .notEmpty().withMessage("El ID del Usuario es Obligatorio")
-        .isMongoId().withMessage("El ID del Usuario no es Valido"),
-    authenticate,
-    authorizeAdmin,
-    handleInputErrors,
-    userExists,
-    AdminController.getUserById
-)
+router.get(
+	"/admin/user/:id",
+	param("id")
+		.notEmpty()
+		.withMessage("El ID del Usuario es Obligatorio")
+		.isMongoId()
+		.withMessage("El ID del Usuario no es Valido"),
+	authenticate,
+	authorizeAdmin,
+	handleInputErrors,
+	userExists,
+	AdminController.getUserById,
+);
 
 /** Get user by personal or business ID */
-router.get("/admin/user/identification/:identificationId",
-    param("identificationId")
-        .notEmpty().withMessage("La identificación es obligatoria"),
-    authenticate,
-    authorizeAdmin,
-    handleInputErrors,
-    AdminController.getUserByIdentification
-)
-
+router.get(
+	"/admin/user/identification/:identificationId",
+	param("identificationId")
+		.notEmpty()
+		.withMessage("La identificación es obligatoria"),
+	authenticate,
+	authorizeAdmin,
+	handleInputErrors,
+	AdminController.getUserByIdentification,
+);
 
 /* Confirm Account */
-router.post("/admin/confirm/:token",
-    param("token")
-        .notEmpty().withMessage("El Token de Ingreso es Obligatorio"),
-    handleInputErrors,
-    authenticate,
-    authorizeAdmin, 
-    validateToken("admin_confirmation"),
-    checkUserStatus,
-    AdminController.confirmUser
-)
+router.post(
+	"/admin/confirm/:token",
+	param("token").notEmpty().withMessage("El Token de Ingreso es Obligatorio"),
+	handleInputErrors,
+	authenticate,
+	authorizeAdmin,
+	validateToken("admin_confirmation"),
+	checkUserStatus,
+	AdminController.confirmUser,
+);
 
 /* Assign user Discount */
-router.patch("/admin/user/:id/discount", 
-    param("id")
-        .notEmpty().withMessage("El ID del Usuario es Obligatorio")
-        .isMongoId().withMessage("El ID del Usuario no es Valido"),
-    body("discount")
-        .notEmpty().withMessage("El Descuento es Obligatorio")
-        .isNumeric().withMessage("El Descuento debe ser un número")
-        .isInt({ min: 0, max: 100 }).withMessage("El Descuento debe estar entre 0 y 100"),
-    handleInputErrors, 
-    authenticate, 
-    authorizeAdmin, 
-    userExists, 
-    AdminController.updateUserDiscount
-)
+router.patch(
+	"/admin/user/:id/discount",
+	param("id")
+		.notEmpty()
+		.withMessage("El ID del Usuario es Obligatorio")
+		.isMongoId()
+		.withMessage("El ID del Usuario no es Valido"),
+	body("discount")
+		.notEmpty()
+		.withMessage("El Descuento es Obligatorio")
+		.isNumeric()
+		.withMessage("El Descuento debe ser un número")
+		.isInt({ min: 0, max: 100 })
+		.withMessage("El Descuento debe estar entre 0 y 100"),
+	handleInputErrors,
+	authenticate,
+	authorizeAdmin,
+	userExists,
+	AdminController.updateUserDiscount,
+);
 
 /* Block User */
-router.patch("/admin/update-status/:id",
-    param("id")
-        .notEmpty().withMessage("El ID del Usuario es Obligatorio")
-        .isMongoId().withMessage("El ID del Usuario no es Valido"),
-    authenticate,
-    authorizeAdmin,
-    handleInputErrors,
-    userExists, // Check if the user exists after handleInputErrors
-    AdminController.updateUserStatus
-)
+router.patch(
+	"/admin/update-status/:id",
+	param("id")
+		.notEmpty()
+		.withMessage("El ID del Usuario es Obligatorio")
+		.isMongoId()
+		.withMessage("El ID del Usuario no es Valido"),
+	authenticate,
+	authorizeAdmin,
+	handleInputErrors,
+	userExists, // Check if the user exists after handleInputErrors
+	AdminController.updateUserStatus,
+);
 
 /* Delete User */
-router.delete("/admin/delete-user/:id",
-    param("id")
-        .notEmpty().withMessage("El ID del Usuario es Obligatorio")
-        .isMongoId().withMessage("El ID del Usuario no es Valido"),
-    authenticate,
-    authorizeAdmin,
-    handleInputErrors,
-    userExists,
-    AdminController.deleteUser
-)
+router.delete(
+	"/admin/delete-user/:id",
+	param("id")
+		.notEmpty()
+		.withMessage("El ID del Usuario es Obligatorio")
+		.isMongoId()
+		.withMessage("El ID del Usuario no es Valido"),
+	authenticate,
+	authorizeAdmin,
+	handleInputErrors,
+	userExists,
+	AdminController.deleteUser,
+);
 
-export default router
+export default router;
