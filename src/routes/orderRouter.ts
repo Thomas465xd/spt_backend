@@ -4,6 +4,7 @@ import { body, param, query } from "express-validator";
 import { handleInputErrors } from "../middleware/validation";
 import { OrderController } from "../controllers/OrderController";
 import { Currencies } from "../models/Order";
+import { Countries } from "@/types";
 
 const router = Router();
 
@@ -217,8 +218,7 @@ router.post(
 		.notEmpty()
 		.withMessage("El País es Obligatorio")
 		.trim()
-		.isString()
-		.withMessage("El país debe ser un texto válido"),
+		.isIn(Object.values(Countries)),
 
 	// Validate total
 	body("total")
