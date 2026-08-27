@@ -1,6 +1,6 @@
 // Country & Identification enums (shared to avoid circular deps)
 export enum Countries {
-	Peru = "Perú",
+	Peru = "Peru",
 	Chile = "Chile",
 	Colombia = "Colombia",
 }
