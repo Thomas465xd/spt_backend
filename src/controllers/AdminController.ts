@@ -193,19 +193,21 @@ export class AdminController {
 		const user = req.user;
 
 		if (!user.confirmed) {
-			const token = await Token.findOne({
+			// Destructure token property
+			const tokenRecord = await Token.findOne({
 				userId: id,
 				type: "admin_confirmation",
 			});
 
-			if (!token) {
+			if (!tokenRecord || tokenRecord.token) {
 				throw new RequestConflictError(
 					"El Token del usuario a expirado.",
 				);
 			}
 
-			res.status(200).json({ user, token });
-			return;
+			// console.log(user, token);
+
+			res.status(200).json({ user, token: tokenRecord.token });
 		}
 
 		res.status(200).json({ user: formatLean(user) });
