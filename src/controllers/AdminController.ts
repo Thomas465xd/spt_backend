@@ -199,7 +199,7 @@ export class AdminController {
 				type: "admin_confirmation",
 			});
 
-			if (!tokenRecord || tokenRecord.token) {
+			if (!tokenRecord.token) {
 				throw new RequestConflictError(
 					"El Token del usuario a expirado.",
 				);
@@ -208,9 +208,11 @@ export class AdminController {
 			// console.log(user, token);
 
 			res.status(200).json({ user, token: tokenRecord.token });
+			return;
 		}
 
 		res.status(200).json({ user: formatLean(user) });
+		return;
 	};
 
 	// Get user by personal ID
