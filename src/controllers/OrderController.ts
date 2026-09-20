@@ -2,7 +2,7 @@ import type { Request, Response } from "express";
 import User, { UserInterface } from "../models/User";
 import { OrderEmail } from "../emails/OrderEmail";
 import { ForbiddenError } from "../errors/forbidden-error";
-import Order, { OrderStatus } from "../models/Order";
+import Order from "../models/Order";
 import { NotFoundError } from "../errors/not-found";
 import { OrderStatusEmail } from "../emails/status";
 import {
@@ -10,6 +10,7 @@ import {
 	findOrderForUser,
 	findOrders,
 } from "../services/OrderService";
+import { OrderStatus } from "@/types";
 
 interface OrderData {
 	token: string;

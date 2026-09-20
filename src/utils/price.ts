@@ -1,4 +1,4 @@
-import { Currencies } from "../models/Order";
+import { Currencies } from "@/types";
 
 export function formatCurrency(value: number, currency: Currencies) {
 	switch (currency) {
@@ -6,5 +6,7 @@ export function formatCurrency(value: number, currency: Currencies) {
 			return `$ ${Math.round(value).toLocaleString("es-CL")}`;
 		case "PEN":
 			return `$ ${Math.round(value).toLocaleString("es-PE")}`;
+		case "USD":
+			return `$ ${Math.round(value).toLocaleString("en-US")}`;
 	}
 }

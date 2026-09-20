@@ -11,6 +11,19 @@ export enum Identifications {
 	Colombia = "NIT",
 }
 
+export enum OrderStatus {
+	Pending = "Pendiente",
+	Sent = "En Transito",
+	Delivered = "Entregado",
+	Cancelled = "Cancelado",
+}
+
+export enum Currencies {
+	PEN = "PEN",
+	CLP = "CLP",
+	USD = "USD",
+}
+
 export interface UserEmailInterface {
 	email: string;
 	name: string;

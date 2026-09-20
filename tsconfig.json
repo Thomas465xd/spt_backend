@@ -8,7 +8,7 @@
 			"@/*": ["src/*"]
 		},
 		"lib": ["esnext"],
-		"types": ["node"],
+		"types": ["node", "jest"],
 		"target": "ESNext",
 		"moduleResolution": "NodeNext",
 		"module": "NodeNext",

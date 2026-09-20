@@ -1,5 +1,4 @@
-import { NotFoundError } from "../errors/not-found";
-import Order, { OrderInterface, OrderStatus } from "../models/Order";
+import Order, { OrderInterface } from "../models/Order";
 import { formatLean } from "../utils";
 
 /** Order Service */

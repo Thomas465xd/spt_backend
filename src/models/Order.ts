@@ -1,18 +1,7 @@
 import mongoose, { Schema, Document, Model, Types } from "mongoose";
 import { UserInterface } from "./User";
 import toJSON from "../utils/json";
-
-export enum OrderStatus {
-	Pending = "Pendiente",
-	Sent = "En Transito",
-	Delivered = "Entregado",
-	Cancelled = "Cancelado",
-}
-
-export enum Currencies {
-	PEN = "PEN",
-	CLP = "CLP",
-}
+import { Currencies, OrderStatus } from "@/types";
 
 interface OrderItem {
 	sku: string;

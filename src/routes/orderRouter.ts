@@ -3,8 +3,7 @@ import { authenticate, authorizeAdmin } from "../middleware/auth";
 import { body, param, query } from "express-validator";
 import { handleInputErrors } from "../middleware/validation";
 import { OrderController } from "../controllers/OrderController";
-import { Currencies } from "../models/Order";
-import { Countries } from "@/types";
+import { Countries, Currencies } from "@/types";
 
 const router = Router();
 
