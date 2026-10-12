@@ -75,25 +75,21 @@ export class AdminController {
 		if (searchId || searchEmail) {
 			query.$or = [];
 			if (searchId) {
+				// Remove separators from search input and create a pattern that matches
+				// each digit with any non-digit characters between them
+				const cleanSearchId = String(searchId).replace(
+					/[.\-\s]/g,
+					"",
+				);
+				// Create pattern like "2[^\d]*3[^\d]*1" to match "23.165.774-6"
+				// This matches digits in order with any non-digits in between
+				const patternStr = cleanSearchId
+					.split("")
+					.join("[^\\d]*");
+				const searchIdRegex = new RegExp(patternStr, "i");
 				query.$or.push(
-					{
-						personalId: new RegExp(
-							String(req.query.personalId).replace(
-								/[.*+?^${}()|[\]\\]/g,
-								"\\$&",
-							),
-							"i",
-						),
-					},
-					{
-						businessId: new RegExp(
-							String(req.query.businessId).replace(
-								/[.*+?^${}()|[\]\\]/g,
-								"\\$&",
-							),
-							"i",
-						),
-					},
+					{ personalId: searchIdRegex },
+					{ businessId: searchIdRegex },
 				);
 			}
 			if (searchEmail)
@@ -139,25 +135,21 @@ export class AdminController {
 		if (searchId || searchEmail) {
 			query.$or = [];
 			if (searchId) {
+				// Remove separators from search input and create a pattern that matches
+				// each digit with any non-digit characters between them
+				const cleanSearchId = String(searchId).replace(
+					/[.\-\s]/g,
+					"",
+				);
+				// Create pattern like "2[^\d]*3[^\d]*1" to match "23.165.774-6"
+				// This matches digits in order with any non-digits in between
+				const patternStr = cleanSearchId
+					.split("")
+					.join("[^\\d]*");
+				const searchIdRegex = new RegExp(patternStr, "i");
 				query.$or.push(
-					{
-						personalId: new RegExp(
-							String(req.query.personalId).replace(
-								/[.*+?^${}()|[\]\\]/g,
-								"\\$&",
-							),
-							"i",
-						),
-					},
-					{
-						businessId: new RegExp(
-							String(req.query.businessId).replace(
-								/[.*+?^${}()|[\]\\]/g,
-								"\\$&",
-							),
-							"i",
-						),
-					},
+					{ personalId: searchIdRegex },
+					{ businessId: searchIdRegex },
 				);
 			}
 			if (searchEmail)
