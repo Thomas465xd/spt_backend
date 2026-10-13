@@ -26,7 +26,7 @@ export interface OrderInterface extends Document {
 
 	purchaseOrderNumber?: string;
 	currency: Currencies;
-	total: number; // Either in peruvian coin (PEN) or chilean (CLP)
+	total: number;
 
 	// Using populate will get other user data
 	// Either though businessId & businessName is redundant here since we got the userId,
@@ -35,8 +35,6 @@ export interface OrderInterface extends Document {
 	businessName: string;
 	businessId: string;
 	user: Types.ObjectId | UserInterface;
-
-	//TODO: General Business Data
 
 	// Estimated delivery
 	estimatedDelivery: Date; // Required for order creation

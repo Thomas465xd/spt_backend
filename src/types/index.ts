@@ -21,6 +21,7 @@ export enum OrderStatus {
 export enum Currencies {
 	PEN = "PEN",
 	CLP = "CLP",
+	COP = "COP",
 	USD = "USD",
 }
 

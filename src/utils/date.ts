@@ -16,6 +16,14 @@ export const formatDate = (date: Date, country: string) => {
 			});
 		}
 
+		case "Colombia": {
+			return new Date(date).toLocaleDateString("es-CO", {
+				year: "numeric",
+				month: "long",
+				day: "numeric",
+			});
+		}
+
 		default: {
 			return new Date(date).toLocaleDateString("es-CL", {
 				year: "numeric",
