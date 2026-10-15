@@ -77,7 +77,7 @@ export interface UserAttrs {
 	phone?: string;
 
 	country: Countries;
-	address: string;
+	address?: string;
 }
 
 // Model interface = adds a build method that uses UserAttrs
@@ -159,7 +159,7 @@ const userSchema = new Schema<UserInterface, UserModel>(
 		//^ Address
 		address: {
 			type: String,
-			required: true,
+			required: false,
 			trim: true,
 		},
 		country: {
