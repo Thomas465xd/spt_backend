@@ -54,7 +54,10 @@ router.post(
 		.withMessage("El Email es obligatorio")
 		.isEmail()
 		.withMessage("El Email no es válido"),
-	body("address").notEmpty().withMessage("La Dirección es obligatoria"),
+	body("address")
+		.optional()
+		.notEmpty()
+		.withMessage("La Dirección no puede ir vacía"),
 	handleInputErrors,
 	checkExistingUser,
 	AuthController.createAccount,

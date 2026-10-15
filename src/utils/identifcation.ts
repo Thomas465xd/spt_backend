@@ -40,5 +40,5 @@ export function formatColombianNIT(input: string): string {
 
 	const formattedBody = body.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
 
-	return `${formattedBody}-${dv}`;
+	return `${formattedBody} - ${dv}`;
 }
