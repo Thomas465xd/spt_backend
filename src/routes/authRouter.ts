@@ -13,7 +13,11 @@ import {
 import { AdminController } from "../controllers/AdminController";
 import { ProfileController } from "../controllers/ProfileController";
 import { Countries, Identifications } from "../types";
-import { validatePersonalId, validateBusinessId } from "../utils/validation";
+import {
+	validatePersonalId,
+	validateBusinessId,
+	validatePhone,
+} from "../utils/validation";
 
 const router = Router();
 
@@ -48,16 +52,19 @@ router.post(
 		.custom((value, { req }) => {
 			return validateBusinessId(value, req.body.country as Countries);
 		}),
-	body("phone").notEmpty().withMessage("El teléfono es obligatorio").trim(),
+	body("phone")
+		.notEmpty()
+		.withMessage("El teléfono es obligatorio")
+		.trim()
+		.custom((value, { req }) => {
+			return validatePhone(value, req.body.country as Countries);
+		}),
 	body("email")
 		.notEmpty()
 		.withMessage("El Email es obligatorio")
 		.isEmail()
 		.withMessage("El Email no es válido"),
-	body("address")
-		.optional()
-		.notEmpty()
-		.withMessage("La Dirección no puede ir vacía"),
+	body("address").notEmpty().withMessage("La Dirección no puede ir vacía"),
 	handleInputErrors,
 	checkExistingUser,
 	AuthController.createAccount,
@@ -166,11 +173,9 @@ router.patch(
 		.isEmail()
 		.withMessage("El Email no es Valido"),
 	body("phone")
-		.matches(/^(\+56\s?9\d{8}|9\d{8})$/)
-		.trim()
-		.withMessage(
-			"Formato de teléfono inválido. Example: +56912345678 or 912345678",
-		),
+		.notEmpty()
+		.withMessage("El teléfono es obligatorio")
+		.trim(),
 	body("address").notEmpty().withMessage("La Dirección es Obligatoria"),
 	handleInputErrors,
 	authenticate,
