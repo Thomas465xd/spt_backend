@@ -107,4 +107,43 @@ export function getIdTypeForCountry(country: Countries): Identifications {
 	return idType;
 }
 
-export { personalIdPatterns, businessIdPatterns, countryToIdType };
+// Phone validation patterns per country (local number, without country prefix)
+const phonePatterns: Record<
+	Countries,
+	{ regex: RegExp; example: string; label: string }
+> = {
+	[Countries.Chile]: {
+		regex: /^9\s?\d{4}\s?\d{4}$/,
+		example: "9 8765 4321",
+		label: "teléfono chileno",
+	},
+	[Countries.Peru]: {
+		regex: /^\d{3}\s?\d{3}\s?\d{3}$/,
+		example: "987 654 321",
+		label: "teléfono peruano",
+	},
+	[Countries.Colombia]: {
+		regex: /^3\d{2}\s?\d{3}\s?\d{4}$/,
+		example: "300 123 4567",
+		label: "teléfono colombiano",
+	},
+};
+
+/**
+ * Validates a phone number against the expected format for a given country.
+ * Returns `true` if valid, throws an Error describing the issue otherwise.
+ */
+export function validatePhone(phone: string, country: Countries): true {
+	const pattern = phonePatterns[country];
+	if (!pattern) {
+		throw new Error(`País no soportado: ${country}`);
+	}
+	if (!pattern.regex.test(phone)) {
+		throw new Error(
+			`Formato de ${pattern.label} inválido. Ejemplo: ${pattern.example}`,
+		);
+	}
+	return true;
+}
+
+export { personalIdPatterns, businessIdPatterns, countryToIdType, phonePatterns };

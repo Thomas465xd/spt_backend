@@ -3,12 +3,20 @@ import User, { UserInterface } from "../models/User";
 import { comparePassword } from "../utils/auth";
 import { NotAuthorizedError } from "../errors/not-authorized";
 import { RequestConflictError } from "../errors/conflict-error";
+import { validatePhone } from "../utils/validation";
 
 export class ProfileController {
 	static updateProfile = async (req: Request, res: Response) => {
 		const { name, businessName, email, phone, address } = req.body;
-
 		const user = req.user as UserInterface;
+
+		// Validate phone against user registered country (similar to create user validation)
+		try {
+			validatePhone(phone, user.country);
+		} catch (err) {
+			res.status(400).json({ message: (err as Error).message });
+			return;
+		}
 
 		// Checks if there is another user registered with inputed email
 		const emailExists = await User.findOne({ email });
