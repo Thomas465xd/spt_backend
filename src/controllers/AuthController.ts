@@ -128,7 +128,8 @@ export class AuthController {
 			throw new NotFoundError("El Usuario no Existe");
 		}
 
-		if (!user.personalId === personalId) {
+		//! Use "!==", not !user.personalId, that would make the comparison "false === personalId"
+		if (user.personalId !== personalId) {
 			throw new NotFoundError("Identificación no existe o incorrecta");
 		}
 
